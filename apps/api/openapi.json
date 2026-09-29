@@ -5,6 +5,64 @@
     "description": "Tectonic API contract",
     "version": "0.1.0"
   },
-  "paths": {},
-  "components": {}
+  "paths": {
+    "/settings/value": {
+      "get": {
+        "tags": ["settings"],
+        "summary": "Get the placeholder setting value",
+        "operationId": "SettingsController_getValue",
+        "responses": {
+          "200": {
+            "description": "The current setting value",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SettingResponseDto" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["settings"],
+        "summary": "Set the placeholder setting value",
+        "operationId": "SettingsController_setValue",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateSettingDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated setting value",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SettingResponseDto" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UpdateSettingDto": {
+        "type": "object",
+        "required": ["value"],
+        "properties": {
+          "value": { "type": "string", "example": "Hello from Tectonic" }
+        }
+      },
+      "SettingResponseDto": {
+        "type": "object",
+        "required": ["value"],
+        "properties": {
+          "value": { "type": "string", "example": "Hello from Tectonic" }
+        }
+      }
+    }
+  }
 }

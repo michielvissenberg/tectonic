@@ -128,6 +128,29 @@ pnpm --filter @tectonic/api exec prisma studio
 
 `prisma:migrate` runs `prisma migrate dev`, which creates and applies a development migration. `db:reset` is destructive: it removes the Docker volume and all local database data.
 
+### Docker permission denied
+
+If `pnpm db:setup` reports `permission denied while trying to connect to the Docker API`, add your Linux user to the Docker group:
+
+```sh
+sudo usermod -aG docker "$USER"
+```
+
+Then log out and back in, or refresh the current shell with:
+
+```sh
+newgrp docker
+```
+
+Verify access before retrying setup:
+
+```sh
+docker ps
+pnpm db:setup
+```
+
+Do not make `/var/run/docker.sock` world-writable. Docker group membership grants broad host privileges and should only be given to trusted local users.
+
 ## Validate the workspace
 
 Run the root checks:

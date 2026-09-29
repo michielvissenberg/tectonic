@@ -17,7 +17,10 @@
       "esnext"
     ],
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "paths": {
+      "@tectonic/sdk": ["../../packages/sdk/src/index.ts"]
+    }
   },
   "include": [
     "next-env.d.ts",
