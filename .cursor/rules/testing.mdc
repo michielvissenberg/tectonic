@@ -1,0 +1,26 @@
+---
+description: Testing and TDD for this repo. Apply when writing tests, fixing bugs, or implementing behaviour.
+alwaysApply: true
+---
+
+# Testing
+
+The source of truth for the loop is the `tdd` skill in `.agents/skills/tdd`. Read it when writing or changing tests.
+
+## Loop
+
+- **Red before green.** Failing test first, then the smallest code that passes it.
+- **One vertical slice per cycle.** One seam, one test, one implementation. Do not bulk-write tests, then bulk-implement.
+- **Refactor is not this loop.** Leave structural cleanup to review (`code-review` skill).
+
+## What to test
+
+- Test **behaviour through public interfaces** (seams). Code can change; the test should still hold.
+- **Confirm seams with the human** before the first test. No test at an unconfirmed seam.
+- Expected values come from an independent source of truth (spec, worked example, known literal), not from re-running the implementation.
+
+## Avoid
+
+- Tests that break on refactor while behaviour is unchanged (internals, private methods, extra side channels).
+- Tautologies (`expect(add(a, b)).toBe(a + b)`).
+- Mocks of collaborators behind the seam under test. See `.agents/skills/tdd/mocking.md`.

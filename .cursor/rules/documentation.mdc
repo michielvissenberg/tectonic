@@ -1,0 +1,28 @@
+---
+description: Docs, glossary, and ADR conventions for agents and humans.
+globs: "**/*.md,docs/**,GLOSSARY.md,AGENTS.md"
+alwaysApply: false
+---
+
+# Documentation
+
+Writing for agents: load `writing-for-agents` when editing skills, `AGENTS.md`, or other always-loaded pointers. Domain terms and decisions: `domain-modeling`.
+
+## Glossary
+
+- Live terms go in `GLOSSARY.md` at the repo root (single-context). Create it lazily when a term is actually resolved.
+- Use glossary words in issues, tests, and code names. Do not drift to avoided synonyms.
+- Missing glossary: proceed silently. Do not nag to create it up front.
+
+## ADRs
+
+- Path: `docs/adr/NNNN-slug.md`. Create the directory on the first ADR.
+- Scan existing numbers and increment. One paragraph is enough: context, decision, why.
+- Write an ADR only when all three hold: **hard to reverse**, **surprising without context**, **a real trade-off**.
+- If new work contradicts an ADR, say so explicitly. Do not silently override.
+
+## AGENTS.md vs rules vs skills
+
+- `AGENTS.md`: always-on, tiny, pointers only.
+- `.cursor/rules/*.mdc`: Cursor topic guidance.
+- `.agents/skills/*/SKILL.md`: procedures. Do not copy a skill into a rule; point at it.

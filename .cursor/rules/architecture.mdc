@@ -1,0 +1,29 @@
+---
+description: Architecture and design — deep modules, seams, and testable interfaces.
+alwaysApply: true
+---
+
+# Architecture
+
+The source of truth for this vocabulary is the `codebase-design` skill in `.agents/skills/codebase-design`. Use those words exactly.
+
+## Vocabulary
+
+| Term | Meaning |
+| --- | --- |
+| **Module** | Anything with an interface and an implementation (function, package, slice). |
+| **Interface** | Everything a caller must know: types, invariants, errors, ordering, config. |
+| **Seam** | Where that interface lives; where behaviour can change without editing the caller. |
+| **Depth** | Leverage at the interface: lots of behaviour behind a small surface. |
+| **Adapter** | A concrete thing that satisfies an interface at a seam. |
+
+Do not substitute "component", "service", "API", or "boundary" for these terms.
+
+## Design
+
+- Prefer **deep** modules: small interface, hidden complexity, tests and callers at the same seam.
+- **Accept dependencies; don't construct them inside** the module under test.
+- **Return results** rather than mutating through side effects when the behaviour allows it.
+- **One adapter is a hypothetical seam; two adapters make it real.** Do not invent a seam until something actually varies.
+
+When the interface shape is the question, load `codebase-design`. For a survey of deepening opportunities, `/improve-codebase-architecture`.
