@@ -1,70 +1,68 @@
-# Tectonic
+# Kate Relay
 
-Tectonic is a demo environment for a customer-service workflow around an AI assistant in a KBC mobile banking app. The project explores how a banking assistant can triage a mortgage question, package the relevant context into a dossier, and hand the case to a human specialist without implying the bot solved the issue on its own.
+The worst moment in banking is when a customer has explained their problem to a chatbot, gets passed to a human, and has to explain it all again. Instead of leaving the advisor with a blank screen, Kate Relay hands them the whole story so they can help right away.
 
-## KBC problem story
+This repository is a product and UX prototype for that handoff inside a KBC mobile banking experience. It shows how Kate can recognize when a complex request needs human judgment, preserve the conversation, and turn the available context into an escalation dossier for a customer-service worker.
 
-The experience is intentionally framed around a realistic but synthetic mortgage support scenario:
+## The problem: the amnesia barrier
 
-- Laura Peeters and her partner Thomas De Smet signed a compromis for a house at Parklaan 14 in Leuven and applied for a EUR 305,000 home loan.
-- The compromis only holds until 18 October 2026 if the loan is refused, and Laura's company has only two years of annual accounts. Laura asks Kate whether the loan will be approved in time.
-- Kate can see the application and the titles of the uploaded documents, but not their contents, and she cannot judge approval. She starts a human escalation.
-- Gemini reads the uploaded documents in `documents/` and writes the escalation dossier: the complication, the unresolved question, and only the documents that matter, each with the facts that make it relevant.
-- The specialist reviews the dossier and sends a confirmation message back to the customer without requiring them to re-explain the problem.
+Digital banking assistants like Kate handle high-volume, standardized transactions well. Complex life events are different. A mortgage application involving non-standard employment, incomplete paperwork, or a strict regulatory deadline can exceed what a rule-based automation should decide.
 
-This is a product and UX prototype, not a production banking workflow.
+When the chatbot passes the customer to a human and the conversation resets to zero, everyone loses:
+
+- **Customer frustration:** Customers repeat their story and chase missing paperwork across multiple messages.
+- **Wasted advisor time:** Advisors dig through chat logs, reconstruct the question, and work out which documents matter before they can give expert advice.
+
+## The solution: Kate Relay
+
+Kate Relay turns the moment Kate gets stuck into a useful starting point for the advisor. In this prototype, the handoff has three parts:
+
+1. **Summarize the situation.** The generated dossier captures what the customer wants, why Kate needs help, the unresolved question, what Kate already checked, and a suggested first action. Key application facts and deadlines stay visible alongside the summary.
+2. **Identify the relevant paperwork.** The dossier is grounded in the synthetic documents already attached to the mortgage application. Gemini selects the documents relevant to this specific question and explains why each one matters, so the advisor does not have to inspect every file from scratch.
+3. **Compile one advisor-ready view.** The customer context, source Kate conversation, generated summary, application facts, relevant documents, and helper reply composer arrive together in the customer-service workspace.
+
+The demo uses a realistic mortgage scenario: Laura Peeters and her partner Thomas De Smet are applying for a EUR 305,000 loan for a house at Parklaan 14 in Leuven. Their loan condition expires on 18 October 2026, and Laura's company has only two years of annual accounts. Kate cannot decide whether the application will be approved in time, so it starts a human escalation instead of pretending to resolve the question.
+
+## What is built
+
+- A customer view with a KBC-style mortgage application and Kate chat drawer.
+- Kate replies through the NestJS API and can invoke a human handoff when the question is outside her context or the customer asks for help.
+- A customer-facing status that confirms the request is in human review and makes clear that the customer does not need to repeat the story.
+- A customer-service workspace with an escalation dossier containing the generated summary, unresolved question, source conversation, account context, suggested first action, and linked documents.
+- Gemini-powered dossier generation grounded in the synthetic PDF files in `documents/`, with a deterministic fallback when the model is unavailable.
+- A helper chat composer for the advisor to send a confirmation back to the customer.
 
 ## Demo flow
 
 The guided demo is designed to fit comfortably inside a sub-three-minute walkthrough:
 
-1. Open the customer view and click the Kate drawer.
-2. Ask Kate whether the loan will be approved before the 18 October loan condition expires, or trigger the human handoff.
-3. Confirm the customer-facing status message: the request is in human review.
-4. Switch to the customer service workspace and open the escalation dossier.
-5. Review the generated summary, source conversation, application facts, and linked documents.
+1. Open the customer view and open Kate.
+2. Ask whether the mortgage can be approved before the 18 October loan condition expires, or trigger the human handoff directly.
+3. Confirm that the customer sees the human-review status without having to start over.
+4. Switch to the customer-service workspace and open Laura's escalation dossier.
+5. Review the generated summary, source conversation, application facts, and relevant documents.
 6. Send the helper confirmation message back to the customer.
 
-## Synthetic-data boundary
+## Scope and trust choices
 
-All customer data in this repo is synthetic and fictional.
+All customer data in this repo is synthetic and fictional. Names, balances, mortgage terms, dates, account numbers, and documents are example data. The project does not connect to a live banking system, real document store, or external identity provider.
 
-- Names, balances, mortgage terms, and date values are example data.
-- No real customer records, private account numbers, or production secrets are used.
-- The project does not connect to a live banking system, real document store, or external identity provider.
+The prototype keeps the customer and advisor experiences separate:
 
-## Security and trust choices
-
-This repository deliberately stays on the safe side of trust/confusion boundaries:
-
-- The customer-facing status clearly says the case is under human review.
-- The internal dossier is labeled as internal and remains separate from the customer-facing message flow.
+- The customer-facing status says the case is under human review.
+- The internal dossier is labeled internal and includes the source conversation for validation.
 - The generated summary does not claim that Kate resolved the issue.
-- The source conversation is preserved beside the summary so the human reviewer can validate the context.
-- Phone support and voice assistance are explicitly left out of scope.
-
-## Scale story and product vision
-
-The mock-up is meant to illustrate a scalable escalation pattern for digital banking support:
-
-- common account questions can be answered by an assistant;
-- document-heavy or ambiguous questions can be escalated with context preserved;
-- human agents receive a summarized dossier instead of starting from zero;
-- the assistant remains an assistant, not a system that pretends it solved the issue alone.
-
-This keeps the demo believable without over-claiming enterprise readiness or real customer data handling.
+- Phone support, voice assistance, document upload/retrieval from live systems, and automated mortgage approval are out of scope.
 
 ## Current limitations
 
-This project is intentionally limited to a local prototype experience:
+This is a local prototype rather than a production banking workflow:
 
 - no real-time multi-user chat transport;
 - no persistence beyond browser-local state;
-- no real document indexing or retrieval;
-- no real customer authentication or case management system;
+- no real document indexing, retrieval, or customer-side paperwork collection;
+- no real customer authentication or case-management system;
 - no phone or voice support implementation.
-
-Phone support is future work, not part of the current demo.
 
 ## Local development
 
