@@ -2,6 +2,11 @@
   "name": "tectonic",
   "private": true,
   "packageManager": "pnpm@10.15.0",
+  "pnpm": {
+    "overrides": {
+      "raw-body": "4.0.0"
+    }
+  },
   "scripts": {
     "build": "turbo run build",
     "db:down": "docker compose down",
