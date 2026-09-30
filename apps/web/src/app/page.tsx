@@ -42,13 +42,6 @@ type EscalationDossier = {
   documents: DossierDocument[];
 };
 
-const initialConversation: ChatMessage[] = [
-  { role: 'customer', text: 'Hi Kate, we signed the compromis for Parklaan 14 today. Did our mortgage application come through?', time: '09:41' },
-  { role: 'kate', text: 'Hi Laura, yes. I can see your application for a home loan of € 305,000 for Parklaan 14, together with the documents you uploaded. It is now waiting for review by a KBC advisor.', time: '09:42' },
-  { role: 'customer', text: 'Great. And the money for the down payment, is that in our savings account?', time: '09:43' },
-  { role: 'kate', text: 'Your KBC Savings account holds € 74,200.00 and your joint KBC Plus account € 8,420.50. An advisor will check your own funds when they review the application.', time: '09:44' },
-];
-
 // Synthetic documents uploaded with the mortgage application; the API reads the same files from `documents/`.
 const applicationDocuments: DossierDocument[] = [
   { title: 'Sales agreement (compromis) Parklaan 14', type: 'Agreement', date: '30 September 2026' },
@@ -97,7 +90,7 @@ export default function HomePage() {
   const [serviceView, setServiceView] = useState(false);
   const [dossierOpen, setDossierOpen] = useState(false);
   const [messageDraft, setMessageDraft] = useState('');
-  const [sentMessages, setSentMessages] = useState<ChatMessage[]>(initialConversation);
+  const [sentMessages, setSentMessages] = useState<ChatMessage[]>([]);
   const [kateReplying, setKateReplying] = useState(false);
   const [helperDraft, setHelperDraft] = useState(helperConfirmationTemplate);
   const [helperMessages, setHelperMessages] = useState<ChatMessage[]>([]);
