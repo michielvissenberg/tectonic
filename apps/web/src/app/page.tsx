@@ -24,7 +24,7 @@ type EscalationDossier = {
   customer: string;
   account: string;
   createdAt: string;
-  status: 'sent';
+  status: 'Awaiting human review';
   generatedSummary: string;
   unresolvedQuestion: string;
   sourceConversation: ChatMessage[];
@@ -50,8 +50,8 @@ const createEscalationDossier = (): EscalationDossier => ({
   customer: 'Sophie Vermeulen',
   account: 'Home loan •••• 1098',
   createdAt: '30 September 2026, 09:45',
-  status: 'sent',
-  generatedSummary: 'Sophie is asking why her monthly mortgage payment increased from EUR 1,230.25 to EUR 1,248.67. Kate explained that the interest rate was adjusted at the start of September, but Sophie needs a human to confirm the detailed payment change and whether it is permanent.',
+  status: 'Awaiting human review',
+  generatedSummary: 'Kate captured that Sophie is asking why her monthly mortgage payment increased from EUR 1,230.25 to EUR 1,248.67. This case needs human review to confirm the payment change, whether it is permanent, and which mortgage documents explain the adjustment.',
   unresolvedQuestion: 'Why did my monthly mortgage payment change, and is the new amount permanent?',
   sourceConversation: initialConversation,
   accountContext: {
@@ -87,8 +87,8 @@ export default function HomePage() {
     setHelperDraft(helperConfirmationTemplate);
     setSentMessages((messages) => [
       ...messages,
-      { role: 'kate', text: 'I’m sorry, I can’t handle this document-specific mortgage question. I’ll ask a human teammate to help.', time: '09:45' },
-      { role: 'kate', text: 'A human helper will join this chat shortly, so you won’t need to repeat what happened.', time: '09:45' },
+      { role: 'kate', text: 'I can pass this mortgage question to a human specialist for review. I’ll keep the summary and the documents together so you won’t need to repeat the full story.', time: '09:45' },
+      { role: 'kate', text: 'A human specialist is reviewing the payment-change question and the related mortgage documents now.', time: '09:45' },
     ]);
   };
 
@@ -184,7 +184,7 @@ export default function HomePage() {
             <div className="dossier-column"><section className="dossier-section"><h3>Mortgage account context</h3><div className="context-grid"><span>Balance<strong>{escalationRequest.dossier.accountContext.balance}</strong></span><span>Monthly payment<strong>{escalationRequest.dossier.accountContext.monthlyPayment}</strong></span><span>Change<strong>{escalationRequest.dossier.accountContext.paymentChange}</strong></span><span>Next payment<strong>{escalationRequest.dossier.accountContext.nextPayment}</strong></span></div></section><section className="dossier-section"><h3>Linked documents</h3><div className="document-list">{escalationRequest.dossier.documents.map((document) => <button className={`document-item${selectedDocument === document.title ? ' is-selected' : ''}`} type="button" aria-pressed={selectedDocument === document.title} key={document.title} onClick={() => setSelectedDocument(document.title)}><div className="document-icon">▤</div><div><strong>{document.title}</strong><small>{document.type} · {document.date}</small><p>{document.relevance}</p></div></button>)}</div></section></div>
             <section className="dossier-section helper-panel"><div className="section-heading"><div><h3>Helper chat</h3><p className="chat-context">Ready for your reply</p></div><span>Internal</span></div><div className="helper-chat-window">{helperMessages.length === 0 && <p className="helper-empty">Send a message to continue the conversation with Sophie.</p>}{helperMessages.map((message, index) => <div className="message-row human-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny human-avatar">CS</div></div>)}</div><form className="worker-composer" onSubmit={sendHelperMessage}><input className="composer-input" type="text" value={helperDraft} onChange={(event) => setHelperDraft(event.target.value)} placeholder="Reply to Sophie..." aria-label="Reply to Sophie" /><button className="send-button" type="submit">Send</button></form></section>
           </div>
-        </section> : serviceView ? <section className="main-panel service-landing"><p className="eyebrow">Customer service workspace</p><h2>Select an escalation dossier</h2>{escalationRequest ? <><p>Sophie Vermeulen has requested help with her home loan. Open the dossier from the selected account to review the conversation and relevant documents.</p><button className="secondary-button" type="button" onClick={() => setDossierOpen(true)}>Open Sophie&apos;s dossier <span>→</span></button></> : <p>No escalation dossiers are available for this demo account yet.</p>}</section> : <section className="main-panel">
+        </section> : serviceView ? <section className="main-panel service-landing"><p className="eyebrow">Customer service workspace</p><h2>Select an escalation dossier</h2>{escalationRequest ? <><div className="requested-state" role="status" aria-live="polite"><span>✓</span><div><strong>Your request was sent to customer service</strong><small>Customer status: Human review in progress. Your mortgage question is being reviewed by a human specialist.</small></div></div><p>Sophie Vermeulen has requested help with her home loan. Open the dossier from the selected account to review the conversation and relevant documents.</p><button className="secondary-button" type="button" onClick={() => setDossierOpen(true)}>Open Sophie&apos;s dossier <span>→</span></button></> : <p>No escalation dossiers are available for this demo account yet.</p>}</section> : <section className="main-panel">
           <div className="mortgage-summary">
             <div className="summary-heading"><div><p className="eyebrow">Home loan</p><h2>Mortgage account</h2></div><span className="account-status">Active</span></div>
             <div className="summary-metrics">
@@ -212,7 +212,7 @@ export default function HomePage() {
           ))}
         </div>
         <div className="chat-action">
-          {escalationRequest ? <div className="requested-state" role="status" aria-live="polite"><span>✓</span><div><strong>Your request was sent to customer service</strong><small>Someone will join this conversation shortly.</small></div></div> : <><form className="composer-form" onSubmit={sendMessage}><input className="composer-input" type="text" value={messageDraft} onChange={(event) => setMessageDraft(event.target.value)} placeholder="Ask Kate a question..." aria-label="Message Kate" /><button className="send-button" type="submit" aria-label="Send message">Send</button></form><button className="human-button" type="button" onClick={requestHumanHelp}><span>↗</span> Talk to a human</button></>}
+          {escalationRequest ? <div className="requested-state" role="status" aria-live="polite"><span>✓</span><div><strong>Your request was sent to customer service</strong><small>Customer status: Human review in progress. Your mortgage question is being reviewed by a human specialist.</small></div></div> : <><form className="composer-form" onSubmit={sendMessage}><input className="composer-input" type="text" value={messageDraft} onChange={(event) => setMessageDraft(event.target.value)} placeholder="Ask Kate a question..." aria-label="Message Kate" /><button className="send-button" type="submit" aria-label="Send message">Send</button></form><button className="human-button" type="button" onClick={requestHumanHelp}><span>↗</span> Talk to a human</button></>}
         </div>
       </aside>
     </main>
