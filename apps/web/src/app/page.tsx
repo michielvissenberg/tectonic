@@ -4,27 +4,82 @@ import { type FormEvent, useState } from 'react';
 
 type EscalationRequest = {
   summary: 'requested';
-  dossier: 'requested';
+  dossier: EscalationDossier;
 };
 
 type ChatMessage = {
-  role: 'customer' | 'kate';
+  role: 'customer' | 'kate' | 'human';
   text: string;
   time: string;
 };
 
+type DossierDocument = {
+  title: string;
+  type: string;
+  date: string;
+  relevance: string;
+};
+
+type EscalationDossier = {
+  customer: string;
+  account: string;
+  createdAt: string;
+  status: 'sent';
+  generatedSummary: string;
+  unresolvedQuestion: string;
+  sourceConversation: ChatMessage[];
+  accountContext: {
+    balance: string;
+    monthlyPayment: string;
+    paymentChange: string;
+    nextPayment: string;
+  };
+  documents: DossierDocument[];
+};
+
+const initialConversation: ChatMessage[] = [
+  { role: 'customer', text: 'Hi Kate, I noticed my monthly mortgage payment is higher this month. Can you tell me why it changed?', time: '09:41' },
+  { role: 'kate', text: 'Hi Sophie, of course. I\'ve had a look at your home loan. Your interest rate was adjusted at the start of this month, which changed the monthly payment from € 1,230.25 to € 1,248.67.', time: '09:42' },
+  { role: 'customer', text: 'Okay, that makes sense. Is this a permanent change?', time: '09:43' },
+  { role: 'kate', text: 'Yes, the new rate applies for the rest of your current rate period. Your next payment will be collected on 3 October. I can also show you the full payment breakdown if that would be useful.', time: '09:44' },
+];
+
+const createEscalationDossier = (): EscalationDossier => ({
+  customer: 'Sophie Vermeulen',
+  account: 'Home loan •••• 1098',
+  createdAt: '30 September 2026, 09:45',
+  status: 'sent',
+  generatedSummary: 'Sophie is asking why her monthly mortgage payment increased from EUR 1,230.25 to EUR 1,248.67. Kate explained that the interest rate was adjusted at the start of September, but Sophie needs a human to confirm the detailed payment change and whether it is permanent.',
+  unresolvedQuestion: 'Why did my monthly mortgage payment change, and is the new amount permanent?',
+  sourceConversation: initialConversation,
+  accountContext: {
+    balance: 'EUR 238,450.12',
+    monthlyPayment: 'EUR 1,248.67',
+    paymentChange: '+ EUR 18.42 this month',
+    nextPayment: '03 October 2026',
+  },
+  documents: [
+    { title: 'Mortgage agreement', type: 'Agreement', date: '12 June 2018', relevance: 'Confirms the rate period and payment terms for this home loan.' },
+    { title: 'Repayment schedule', type: 'Schedule', date: '01 September 2026', relevance: 'Shows the updated monthly amount and future payment breakdown.' },
+    { title: 'Latest monthly statement', type: 'Statement', date: '30 September 2026', relevance: 'Shows the first statement containing the EUR 18.42 payment increase.' },
+  ],
+});
+
 export default function HomePage() {
   const [kateOpen, setKateOpen] = useState(true);
   const [escalationRequest, setEscalationRequest] = useState<EscalationRequest | null>(null);
+  const [serviceView, setServiceView] = useState(false);
   const [messageDraft, setMessageDraft] = useState('');
   const [sentMessages, setSentMessages] = useState<ChatMessage[]>([]);
+  const [helperDraft, setHelperDraft] = useState('');
+  const [helperMessages, setHelperMessages] = useState<ChatMessage[]>([]);
 
   const requestHumanHelp = () => {
     if (escalationRequest) {
       return;
     }
 
-    setEscalationRequest({ summary: 'requested', dossier: 'requested' });
+    setEscalationRequest({ summary: 'requested', dossier: createEscalationDossier() });
   };
 
   const sendMessage = (event: FormEvent<HTMLFormElement>) => {
@@ -50,6 +105,18 @@ export default function HomePage() {
     }]);
   };
 
+  const sendHelperMessage = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const text = helperDraft.trim();
+
+    if (!text) {
+      return;
+    }
+
+    setHelperMessages((messages) => [...messages, { role: 'human', text, time: '09:47' }]);
+    setHelperDraft('');
+  };
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -62,7 +129,8 @@ export default function HomePage() {
         </div>
         <div className="topbar-actions">
           <span className="secure-status"><span className="status-dot" /> Secure session</span>
-          <button className="kate-trigger" type="button" onClick={() => setKateOpen(true)}><span className="kate-trigger-icon">K</span> Ask Kate</button>
+          <button className="view-switch" type="button" onClick={() => { setServiceView((isServiceView) => !isServiceView); setKateOpen(false); }}>{serviceView ? 'Customer view' : 'Customer service view'}</button>
+          {!serviceView && <button className="kate-trigger" type="button" onClick={() => setKateOpen(true)}><span className="kate-trigger-icon">K</span> Ask Kate</button>}
           <div className="avatar avatar-small">SV</div>
         </div>
       </header>
@@ -99,7 +167,25 @@ export default function HomePage() {
           </div>
         </aside>
 
-        <section className="main-panel">
+        {serviceView && escalationRequest ? <section className="main-panel dossier-panel">
+          <div className="dossier-header"><div><p className="eyebrow">Internal escalation dossier</p><h2>{escalationRequest.dossier.customer}</h2><p className="dossier-account">{escalationRequest.dossier.account}</p></div><span className="dossier-status">{escalationRequest.dossier.status}</span></div>
+          <div className="dossier-meta"><span><strong>Created</strong>{escalationRequest.dossier.createdAt}</span><span><strong>Source</strong>Kate conversation</span></div>
+          <div className="dossier-grid">
+            <div className="dossier-column">
+              <section className="dossier-section"><div className="section-heading"><h3>Generated summary</h3><span>Generated</span></div><p>{escalationRequest.dossier.generatedSummary}</p></section>
+              <section className="dossier-section"><h3>Unresolved question</h3><p className="question-callout">{escalationRequest.dossier.unresolvedQuestion}</p></section>
+              <section className="dossier-section"><h3>Mortgage account context</h3><div className="context-grid"><span>Balance<strong>{escalationRequest.dossier.accountContext.balance}</strong></span><span>Monthly payment<strong>{escalationRequest.dossier.accountContext.monthlyPayment}</strong></span><span>Change<strong>{escalationRequest.dossier.accountContext.paymentChange}</strong></span><span>Next payment<strong>{escalationRequest.dossier.accountContext.nextPayment}</strong></span></div></section>
+            </div>
+            <div className="dossier-column"><section className="dossier-section"><h3>Linked documents</h3><div className="document-list">{escalationRequest.dossier.documents.map((document) => <article className="document-item" key={document.title}><div className="document-icon">▤</div><div><strong>{document.title}</strong><small>{document.type} · {document.date}</small><p>{document.relevance}</p></div></article>)}</div></section></div>
+          </div>
+          <section className="dossier-section source-section"><div className="section-heading"><div><h3>Customer service chat</h3><p className="chat-context">Source Kate conversation · Take over this conversation</p></div><span>Internal</span></div><div className="worker-chat-window"><div className="date-divider"><span>Today, 30 September</span></div>{[...escalationRequest.dossier.sourceConversation, ...helperMessages].map((message, index) => message.role === 'customer' ? (
+            <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div>
+          ) : message.role === 'kate' ? (
+            <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>
+          ) : (
+            <div className="message-row human-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny human-avatar">CS</div></div>
+          ))}</div><form className="worker-composer" onSubmit={sendHelperMessage}><input className="composer-input" type="text" value={helperDraft} onChange={(event) => setHelperDraft(event.target.value)} placeholder="Reply to Sophie..." aria-label="Reply to Sophie" /><button className="send-button" type="submit">Send</button></form></section>
+        </section> : <section className="main-panel">
           <div className="mortgage-summary">
             <div className="summary-heading"><div><p className="eyebrow">Home loan</p><h2>Mortgage account</h2></div><span className="account-status">Active</span></div>
             <div className="summary-metrics">
@@ -109,7 +195,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="account-content-placeholder"><p className="eyebrow">Recent activity</p><h2>Your home loan is up to date</h2><p>Your latest payment was received on 03 September 2026. Open Kate for a clear explanation of the payment change.</p><button className="secondary-button" type="button" onClick={() => setKateOpen(true)}>Open Kate <span>→</span></button></div>
-        </section>
+        </section>}
       </section>
 
       {kateOpen && <div className="kate-scrim" onClick={() => setKateOpen(false)} />}
@@ -118,10 +204,11 @@ export default function HomePage() {
         <div className="kate-drawer-status"><span className="status-dot" /> Online now</div>
         <div className="chat-window">
           <div className="date-divider"><span>Today, 30 September</span></div>
-          <div className="message-row customer-message"><div className="message-bubble"><p>Hi Kate, I noticed my monthly mortgage payment is higher this month. Can you tell me why it changed?</p><time>09:41</time></div><div className="avatar avatar-tiny">SV</div></div>
-          <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>Hi Sophie, of course. I’ve had a look at your home loan. Your interest rate was adjusted at the start of this month, which changed the monthly payment from € 1,230.25 to € 1,248.67.</p><time>09:42</time></div></div>
-          <div className="message-row customer-message"><div className="message-bubble"><p>Okay, that makes sense. Is this a permanent change?</p><time>09:43</time></div><div className="avatar avatar-tiny">SV</div></div>
-          <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>Yes, the new rate applies for the rest of your current rate period. Your next payment will be collected on 3 October. I can also show you the full payment breakdown if that would be useful.</p><time>09:44</time></div></div>
+          {initialConversation.map((message, index) => message.role === 'customer' ? (
+            <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div>
+          ) : (
+            <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>
+          ))}
           {sentMessages.map((message, index) => message.role === 'customer' ? (
             <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div>
           ) : (
