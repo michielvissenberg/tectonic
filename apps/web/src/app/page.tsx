@@ -30,9 +30,13 @@ type EscalationDossier = {
   customer: string;
   account: string;
   createdAt: string;
-  status: 'Awaiting human review';
+  status: 'sent';
+  // Whether the generated content is still coming, came from Gemini, or is the deterministic fallback.
+  generation: 'generating' | 'generated' | 'fallback';
   generatedSummary: string;
   unresolvedQuestion: string;
+  kateAlreadyChecked: string[];
+  suggestedFirstAction: string;
   sourceConversation: ChatMessage[];
   accountContext: {
     balance: string;
@@ -55,13 +59,20 @@ const humanJoiningMessage = 'A human helper will join this chat shortly, so you 
 
 const helperConfirmationTemplate = 'I understand your question as: your monthly mortgage payment changed and you want to know why. Is that correct?';
 
+const fallbackSummary = 'The summary could not be generated. Sophie asked for human help from the Kate conversation; read the source Kate conversation for the full context.';
+
+// Customer identity, account context, timestamps and status are deterministic. The other fields start as a
+// deterministic fallback and are replaced by the generated dossier content once Gemini returns it.
 const createEscalationDossier = (sourceConversation: ChatMessage[]): EscalationDossier => ({
   customer: 'Sophie Vermeulen',
   account: 'Home loan •••• 1098',
-  createdAt: '30 September 2026, 09:45',
-  status: 'Awaiting human review',
-  generatedSummary: 'Kate captured that Sophie is asking why her monthly mortgage payment increased from EUR 1,230.25 to EUR 1,248.67. This case needs human review to confirm the payment change, whether it is permanent, and which mortgage documents explain the adjustment.',
-  unresolvedQuestion: 'Why did my monthly mortgage payment change, and is the new amount permanent?',
+  createdAt: `30 September 2026, ${currentTime()}`,
+  status: 'sent',
+  generation: 'generating',
+  generatedSummary: 'Generating the summary from the Kate conversation…',
+  unresolvedQuestion: sourceConversation.findLast((message) => message.role === 'customer')?.text ?? 'Not recorded.',
+  kateAlreadyChecked: [],
+  suggestedFirstAction: 'Read the source Kate conversation, then confirm the customer\'s question with Sophie.',
   sourceConversation,
   accountContext: {
     balance: 'EUR 238,450.12',
@@ -107,6 +118,26 @@ export default function HomePage() {
     setSentMessages(liveConversation);
     setEscalationRequest({ summary: 'requested', dossier: createEscalationDossier(liveConversation) });
     setHelperDraft(helperConfirmationTemplate);
+    void generateDossier(liveConversation);
+  };
+
+  const generateDossier = async (liveConversation: ChatMessage[]) => {
+    const kateConversation = liveConversation
+      .filter((message) => message.role !== 'human')
+      .map(({ role, text }) => ({ role: role as 'customer' | 'kate', text }));
+    const { data } = await api.POST('/kate/dossier', { body: { messages: kateConversation } }).catch(() => ({ data: undefined }));
+    const generated: Partial<EscalationDossier> = data
+      ? {
+          generation: 'generated',
+          generatedSummary: data.summary,
+          unresolvedQuestion: data.unresolvedQuestion,
+          kateAlreadyChecked: data.kateAlreadyChecked,
+          suggestedFirstAction: data.suggestedFirstAction,
+          documents: data.documents,
+        }
+      : { generation: 'fallback', generatedSummary: fallbackSummary };
+
+    setEscalationRequest((request) => request && { ...request, dossier: { ...request.dossier, ...generated } });
   };
 
   const requestHumanHelp = () => escalate(sentMessages, buttonHandoffMessage);
@@ -210,8 +241,8 @@ export default function HomePage() {
           <div className="dossier-header"><div><p className="eyebrow">Internal escalation dossier</p><h2>{escalationRequest.dossier.customer}</h2><p className="dossier-account">{escalationRequest.dossier.account}</p></div><span className="dossier-status">{escalationRequest.dossier.status}</span></div>
           <div className="dossier-meta"><span><strong>Created</strong>{escalationRequest.dossier.createdAt}</span><span><strong>Source</strong>Kate conversation</span></div>
           <div className="worker-workspace">
-            <div className="dossier-column"><section className="dossier-section"><div className="section-heading"><h3>Generated summary</h3><span>Generated</span></div><p>{escalationRequest.dossier.generatedSummary}</p></section><section className="dossier-section"><h3>Unresolved question</h3><p className="question-callout">{escalationRequest.dossier.unresolvedQuestion}</p></section><section className="dossier-section source-section"><div className="section-heading"><div><h3>Source Kate conversation</h3><p className="chat-context">The context sent with the escalation</p></div><span>Internal</span></div><div className="worker-chat-window"><div className="date-divider"><span>Today, 30 September</span></div>{escalationRequest.dossier.sourceConversation.map((message, index) => message.role === 'customer' ? <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div> : <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>)}</div></section></div>
-            <div className="dossier-column"><section className="dossier-section"><h3>Mortgage account context</h3><div className="context-grid"><span>Balance<strong>{escalationRequest.dossier.accountContext.balance}</strong></span><span>Monthly payment<strong>{escalationRequest.dossier.accountContext.monthlyPayment}</strong></span><span>Change<strong>{escalationRequest.dossier.accountContext.paymentChange}</strong></span><span>Next payment<strong>{escalationRequest.dossier.accountContext.nextPayment}</strong></span></div></section><section className="dossier-section"><h3>Linked documents</h3><div className="document-list">{escalationRequest.dossier.documents.map((document) => <button className={`document-item${selectedDocument === document.title ? ' is-selected' : ''}`} type="button" aria-pressed={selectedDocument === document.title} key={document.title} onClick={() => setSelectedDocument(document.title)}><div className="document-icon">▤</div><div><strong>{document.title}</strong><small>{document.type} · {document.date}</small><p>{document.relevance}</p></div></button>)}</div></section></div>
+            <div className="dossier-column"><section className="dossier-section"><div className="section-heading"><h3>Generated summary</h3><span>{{ generating: 'Generating…', generated: 'Generated', fallback: 'Not generated' }[escalationRequest.dossier.generation]}</span></div><p>{escalationRequest.dossier.generatedSummary}</p></section><section className="dossier-section"><h3>Unresolved question</h3><p className="question-callout">{escalationRequest.dossier.unresolvedQuestion}</p></section><section className="dossier-section"><h3>What Kate already checked</h3>{escalationRequest.dossier.kateAlreadyChecked.length > 0 ? <ul>{escalationRequest.dossier.kateAlreadyChecked.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p>Nothing recorded.</p>}</section><section className="dossier-section"><h3>Suggested first action</h3><p>{escalationRequest.dossier.suggestedFirstAction}</p></section><section className="dossier-section source-section"><div className="section-heading"><div><h3>Source Kate conversation</h3><p className="chat-context">The context sent with the escalation</p></div><span>Internal</span></div><div className="worker-chat-window"><div className="date-divider"><span>Today, 30 September</span></div>{escalationRequest.dossier.sourceConversation.map((message, index) => message.role === 'customer' ? <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div> : <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>)}</div></section></div>
+            <div className="dossier-column"><section className="dossier-section"><h3>Mortgage account context</h3><div className="context-grid"><span>Balance<strong>{escalationRequest.dossier.accountContext.balance}</strong></span><span>Monthly payment<strong>{escalationRequest.dossier.accountContext.monthlyPayment}</strong></span><span>Change<strong>{escalationRequest.dossier.accountContext.paymentChange}</strong></span><span>Next payment<strong>{escalationRequest.dossier.accountContext.nextPayment}</strong></span></div></section><section className="dossier-section"><h3>Linked documents</h3><div className="document-list">{escalationRequest.dossier.documents.length === 0 && <p>No documents linked.</p>}{escalationRequest.dossier.documents.map((document) => <button className={`document-item${selectedDocument === document.title ? ' is-selected' : ''}`} type="button" aria-pressed={selectedDocument === document.title} key={document.title} onClick={() => setSelectedDocument(document.title)}><div className="document-icon">▤</div><div><strong>{document.title}</strong><small>{document.type} · {document.date}</small><p>{document.relevance}</p></div></button>)}</div></section></div>
             <section className="dossier-section helper-panel"><div className="section-heading"><div><h3>Helper chat</h3><p className="chat-context">Ready for your reply</p></div><span>Internal</span></div><div className="helper-chat-window">{helperMessages.length === 0 && <p className="helper-empty">Send a message to continue the conversation with Sophie.</p>}{helperMessages.map((message, index) => <div className="message-row human-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny human-avatar">CS</div></div>)}</div><form className="worker-composer" onSubmit={sendHelperMessage}><input className="composer-input" type="text" value={helperDraft} onChange={(event) => setHelperDraft(event.target.value)} placeholder="Reply to Sophie..." aria-label="Reply to Sophie" /><button className="send-button" type="submit">Send</button></form></section>
           </div>
         </section> : serviceView ? <section className="main-panel service-landing"><p className="eyebrow">Customer service workspace</p><h2>Select an escalation dossier</h2>{escalationRequest ? <><div className="requested-state" role="status" aria-live="polite"><span>✓</span><div><strong>Your request was sent to customer service</strong><small>Customer status: Human review in progress. Your mortgage question is being reviewed by a human specialist.</small></div></div><p>Sophie Vermeulen has requested help with her home loan. Open the dossier from the selected account to review the conversation and relevant documents.</p><button className="secondary-button" type="button" onClick={() => setDossierOpen(true)}>Open Sophie&apos;s dossier <span>→</span></button></> : <p>No escalation dossiers are available for this demo account yet.</p>}</section> : <section className="main-panel">
