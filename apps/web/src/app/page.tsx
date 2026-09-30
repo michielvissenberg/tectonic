@@ -69,10 +69,12 @@ export default function HomePage() {
   const [kateOpen, setKateOpen] = useState(true);
   const [escalationRequest, setEscalationRequest] = useState<EscalationRequest | null>(null);
   const [serviceView, setServiceView] = useState(false);
+  const [dossierOpen, setDossierOpen] = useState(false);
   const [messageDraft, setMessageDraft] = useState('');
   const [sentMessages, setSentMessages] = useState<ChatMessage[]>([]);
   const [helperDraft, setHelperDraft] = useState('');
   const [helperMessages, setHelperMessages] = useState<ChatMessage[]>([]);
+  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
 
   const requestHumanHelp = () => {
     if (escalationRequest) {
@@ -129,7 +131,7 @@ export default function HomePage() {
         </div>
         <div className="topbar-actions">
           <span className="secure-status"><span className="status-dot" /> Secure session</span>
-          <button className="view-switch" type="button" onClick={() => { setServiceView((isServiceView) => !isServiceView); setKateOpen(false); }}>{serviceView ? 'Customer view' : 'Customer service view'}</button>
+          <button className="view-switch" type="button" onClick={() => { setServiceView((isServiceView) => !isServiceView); setDossierOpen(false); setKateOpen(false); }}>{serviceView ? 'Customer view' : 'Customer service view'}</button>
           {!serviceView && <button className="kate-trigger" type="button" onClick={() => setKateOpen(true)}><span className="kate-trigger-icon">K</span> Ask Kate</button>}
           <div className="avatar avatar-small">SV</div>
         </div>
@@ -137,10 +139,10 @@ export default function HomePage() {
 
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Good morning, Sophie</p>
-          <h1>Your financial overview</h1>
+          <p className="eyebrow">{serviceView ? 'Customer service workspace' : 'Good morning, Sophie'}</p>
+          <h1>{serviceView ? 'Escalation desk' : 'Your financial overview'}</h1>
         </div>
-        <span className="last-updated">Updated just now</span>
+        <span className="last-updated">{serviceView ? 'Internal view' : 'Updated just now'}</span>
       </div>
 
       <section className="workspace-grid">
@@ -161,31 +163,23 @@ export default function HomePage() {
             <button className="account-nav-item" type="button"><span className="account-icon">▤</span><span><strong>Savings account</strong><small>BE32 7350 •••• 9350</small></span><span className="nav-chevron">›</span></button>
           </nav>
 
+          {serviceView && escalationRequest && <button className={`dossier-entry${dossierOpen ? ' is-open' : ''}`} type="button" onClick={() => setDossierOpen(true)}><span className="dossier-entry-icon">↗</span><span><strong>Escalation dossier</strong><small>{dossierOpen ? 'Currently open' : 'Open for Sophie'}</small></span><span className="nav-chevron">›</span></button>}
+
           <div className="help-card">
             <span className="help-icon">?</span>
             <div><strong>Need help?</strong><p>Kate can answer your questions.</p></div>
           </div>
         </aside>
 
-        {serviceView && escalationRequest ? <section className="main-panel dossier-panel">
+        {serviceView && escalationRequest && dossierOpen ? <section className="main-panel dossier-panel">
           <div className="dossier-header"><div><p className="eyebrow">Internal escalation dossier</p><h2>{escalationRequest.dossier.customer}</h2><p className="dossier-account">{escalationRequest.dossier.account}</p></div><span className="dossier-status">{escalationRequest.dossier.status}</span></div>
           <div className="dossier-meta"><span><strong>Created</strong>{escalationRequest.dossier.createdAt}</span><span><strong>Source</strong>Kate conversation</span></div>
-          <div className="dossier-grid">
-            <div className="dossier-column">
-              <section className="dossier-section"><div className="section-heading"><h3>Generated summary</h3><span>Generated</span></div><p>{escalationRequest.dossier.generatedSummary}</p></section>
-              <section className="dossier-section"><h3>Unresolved question</h3><p className="question-callout">{escalationRequest.dossier.unresolvedQuestion}</p></section>
-              <section className="dossier-section"><h3>Mortgage account context</h3><div className="context-grid"><span>Balance<strong>{escalationRequest.dossier.accountContext.balance}</strong></span><span>Monthly payment<strong>{escalationRequest.dossier.accountContext.monthlyPayment}</strong></span><span>Change<strong>{escalationRequest.dossier.accountContext.paymentChange}</strong></span><span>Next payment<strong>{escalationRequest.dossier.accountContext.nextPayment}</strong></span></div></section>
-            </div>
-            <div className="dossier-column"><section className="dossier-section"><h3>Linked documents</h3><div className="document-list">{escalationRequest.dossier.documents.map((document) => <article className="document-item" key={document.title}><div className="document-icon">▤</div><div><strong>{document.title}</strong><small>{document.type} · {document.date}</small><p>{document.relevance}</p></div></article>)}</div></section></div>
+          <div className="worker-workspace">
+            <div className="dossier-column"><section className="dossier-section"><div className="section-heading"><h3>Generated summary</h3><span>Generated</span></div><p>{escalationRequest.dossier.generatedSummary}</p></section><section className="dossier-section"><h3>Unresolved question</h3><p className="question-callout">{escalationRequest.dossier.unresolvedQuestion}</p></section><section className="dossier-section source-section"><div className="section-heading"><div><h3>Source Kate conversation</h3><p className="chat-context">The context sent with the escalation</p></div><span>Internal</span></div><div className="worker-chat-window"><div className="date-divider"><span>Today, 30 September</span></div>{escalationRequest.dossier.sourceConversation.map((message, index) => message.role === 'customer' ? <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div> : <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>)}</div></section></div>
+            <div className="dossier-column"><section className="dossier-section"><h3>Mortgage account context</h3><div className="context-grid"><span>Balance<strong>{escalationRequest.dossier.accountContext.balance}</strong></span><span>Monthly payment<strong>{escalationRequest.dossier.accountContext.monthlyPayment}</strong></span><span>Change<strong>{escalationRequest.dossier.accountContext.paymentChange}</strong></span><span>Next payment<strong>{escalationRequest.dossier.accountContext.nextPayment}</strong></span></div></section><section className="dossier-section"><h3>Linked documents</h3><div className="document-list">{escalationRequest.dossier.documents.map((document) => <button className={`document-item${selectedDocument === document.title ? ' is-selected' : ''}`} type="button" aria-pressed={selectedDocument === document.title} key={document.title} onClick={() => setSelectedDocument(document.title)}><div className="document-icon">▤</div><div><strong>{document.title}</strong><small>{document.type} · {document.date}</small><p>{document.relevance}</p></div></button>)}</div></section></div>
+            <section className="dossier-section helper-panel"><div className="section-heading"><div><h3>Helper chat</h3><p className="chat-context">Ready for your reply</p></div><span>Internal</span></div><div className="helper-chat-window">{helperMessages.length === 0 && <p className="helper-empty">Send a message to continue the conversation with Sophie.</p>}{helperMessages.map((message, index) => <div className="message-row human-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny human-avatar">CS</div></div>)}</div><form className="worker-composer" onSubmit={sendHelperMessage}><input className="composer-input" type="text" value={helperDraft} onChange={(event) => setHelperDraft(event.target.value)} placeholder="Reply to Sophie..." aria-label="Reply to Sophie" /><button className="send-button" type="submit">Send</button></form></section>
           </div>
-          <section className="dossier-section source-section"><div className="section-heading"><div><h3>Customer service chat</h3><p className="chat-context">Source Kate conversation · Take over this conversation</p></div><span>Internal</span></div><div className="worker-chat-window"><div className="date-divider"><span>Today, 30 September</span></div>{[...escalationRequest.dossier.sourceConversation, ...helperMessages].map((message, index) => message.role === 'customer' ? (
-            <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div>
-          ) : message.role === 'kate' ? (
-            <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>
-          ) : (
-            <div className="message-row human-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny human-avatar">CS</div></div>
-          ))}</div><form className="worker-composer" onSubmit={sendHelperMessage}><input className="composer-input" type="text" value={helperDraft} onChange={(event) => setHelperDraft(event.target.value)} placeholder="Reply to Sophie..." aria-label="Reply to Sophie" /><button className="send-button" type="submit">Send</button></form></section>
-        </section> : <section className="main-panel">
+        </section> : serviceView ? <section className="main-panel service-landing"><p className="eyebrow">Customer service workspace</p><h2>Select an escalation dossier</h2>{escalationRequest ? <><p>Sophie Vermeulen has requested help with her home loan. Open the dossier from the selected account to review the conversation and relevant documents.</p><button className="secondary-button" type="button" onClick={() => setDossierOpen(true)}>Open Sophie&apos;s dossier <span>→</span></button></> : <p>No escalation dossiers are available for this demo account yet.</p>}</section> : <section className="main-panel">
           <div className="mortgage-summary">
             <div className="summary-heading"><div><p className="eyebrow">Home loan</p><h2>Mortgage account</h2></div><span className="account-status">Active</span></div>
             <div className="summary-metrics">
