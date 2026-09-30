@@ -2,6 +2,13 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 
+// Load apps/api/.env (secrets such as VERTEX_API_KEY stay server-side and uncommitted).
+try {
+  process.loadEnvFile();
+} catch {
+  // No .env file: rely on the process environment.
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({ origin: 'http://localhost:3000' });

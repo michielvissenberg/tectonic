@@ -45,6 +45,34 @@
           }
         }
       }
+    },
+    "/kate/reply": {
+      "post": {
+        "tags": ["kate"],
+        "summary": "Get Kate's next reply to the Kate conversation",
+        "operationId": "KateController_reply",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/KateReplyRequestDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kate's reply",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/KateReplyResponseDto" }
+              }
+            }
+          },
+          "400": { "description": "Invalid Kate conversation" },
+          "502": { "description": "Gemini could not reply" },
+          "503": { "description": "Kate is not configured" }
+        }
+      }
     }
   },
   "components": {
@@ -61,6 +89,28 @@
         "required": ["value"],
         "properties": {
           "value": { "type": "string", "example": "Hello from Tectonic" }
+        }
+      },
+      "KateMessageDto": {
+        "type": "object",
+        "required": ["role", "text"],
+        "properties": {
+          "role": { "type": "string", "enum": ["customer", "kate"], "example": "customer" },
+          "text": { "type": "string", "example": "Why did my monthly mortgage payment change?" }
+        }
+      },
+      "KateReplyRequestDto": {
+        "type": "object",
+        "required": ["messages"],
+        "properties": {
+          "messages": { "type": "array", "items": { "$ref": "#/components/schemas/KateMessageDto" } }
+        }
+      },
+      "KateReplyResponseDto": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "text": { "type": "string", "example": "Your interest rate was adjusted at the start of September." }
         }
       }
     }
