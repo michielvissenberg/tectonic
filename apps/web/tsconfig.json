@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "allowJs": true,
@@ -19,7 +19,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "paths": {
-      "@tectonic/sdk": ["../../packages/sdk/src/index.ts"]
+      "@tectonic/sdk": [
+        "../../packages/sdk/src/index.ts"
+      ]
     }
   },
   "include": [
