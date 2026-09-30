@@ -85,6 +85,11 @@ export default function HomePage() {
 
     setEscalationRequest({ summary: 'requested', dossier: createEscalationDossier() });
     setHelperDraft(helperConfirmationTemplate);
+    setSentMessages((messages) => [
+      ...messages,
+      { role: 'kate', text: 'I’m sorry, I can’t handle this document-specific mortgage question. I’ll ask a human teammate to help.', time: '09:45' },
+      { role: 'kate', text: 'A human helper will join this chat shortly, so you won’t need to repeat what happened.', time: '09:45' },
+    ]);
   };
 
   const sendMessage = (event: FormEvent<HTMLFormElement>) => {
@@ -201,14 +206,10 @@ export default function HomePage() {
           {sentMessages.map((message, index) => message.role === 'customer' ? (
             <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div>
           ) : message.role === 'human' ? (
-            <div className="message-row human-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny human-avatar">CS</div></div>
+            <div className="message-row human-message" key={`${message.time}-${index}`}><div className="avatar avatar-tiny human-avatar">CS</div><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>
           ) : (
             <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>
           ))}
-          {escalationRequest && <>
-            <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>I’m sorry, I can’t handle this document-specific mortgage question. I’ll ask a human teammate to help.</p><time>09:45</time></div></div>
-            <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>A human helper will join this chat shortly, so you won’t need to repeat what happened.</p><time>09:45</time></div></div>
-          </>}
         </div>
         <div className="chat-action">
           {escalationRequest ? <div className="requested-state" role="status" aria-live="polite"><span>✓</span><div><strong>Your request was sent to customer service</strong><small>Someone will join this conversation shortly.</small></div></div> : <><form className="composer-form" onSubmit={sendMessage}><input className="composer-input" type="text" value={messageDraft} onChange={(event) => setMessageDraft(event.target.value)} placeholder="Ask Kate a question..." aria-label="Message Kate" /><button className="send-button" type="submit" aria-label="Send message">Send</button></form><button className="human-button" type="button" onClick={requestHumanHelp}><span>↗</span> Talk to a human</button></>}
