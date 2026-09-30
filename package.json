@@ -4,6 +4,8 @@
   "packageManager": "pnpm@10.15.0",
   "pnpm": {
     "overrides": {
+      "deepmerge-ts": "8.0.0",
+      "protobufjs": "8.8.0",
       "raw-body": "4.0.0"
     }
   },

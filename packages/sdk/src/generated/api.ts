@@ -74,14 +74,14 @@ export interface components {
              * @enum {string}
              */
             role: "customer" | "kate";
-            /** @example Why did my monthly mortgage payment change? */
+            /** @example Did our mortgage application for Parklaan 14 come through? */
             text: string;
         };
         KateReplyRequestDto: {
             messages: components["schemas"]["KateMessageDto"][];
         };
         KateReplyResponseDto: {
-            /** @example Your interest rate was adjusted at the start of September. */
+            /** @example Yes, your application for a home loan of EUR 305,000 is waiting for review by a KBC advisor. */
             text: string;
             /**
              * @description True when Kate started a human escalation; text is then her handoff message.
@@ -93,28 +93,28 @@ export interface components {
             messages: components["schemas"]["KateMessageDto"][];
         };
         KateDossierDocumentDto: {
-            /** @example Repayment schedule */
+            /** @example Sales agreement (compromis) Parklaan 14 */
             title: string;
-            /** @example Schedule */
+            /** @example Agreement */
             type: string;
-            /** @example 01 September 2026 */
+            /** @example 30 September 2026 */
             date: string;
-            /** @example Shows the updated monthly amount and future payment breakdown. */
+            /** @example The loan condition expires on 18 October 2026 and requires a loan of at least EUR 305,000. */
             relevance: string;
         };
         KateDossierResponseDto: {
-            /** @example Sophie asked why her monthly mortgage payment increased. Kate explained the rate adjustment, but Sophie wants a human to check the details. */
+            /** @example Laura asked whether her EUR 305,000 home loan can be approved before the loan condition in her compromis expires on 18 October 2026. Her company has only two years of annual accounts. */
             summary: string;
-            /** @example What exact interest rate does my mortgage agreement use now? */
+            /** @example Will our loan be approved before the loan condition expires on 18 October? */
             unresolvedQuestion: string;
             /**
              * @example [
-             *       "The interest rate was adjusted at the start of September 2026."
+             *       "The application for a EUR 305,000 home loan was received and is waiting for advisor review."
              *     ]
              */
             kateAlreadyChecked: string[];
             documents: components["schemas"]["KateDossierDocumentDto"][];
-            /** @example Open the repayment schedule and confirm the new rate with Sophie. */
+            /** @example Check Studio Laura's annual accounts against the income requirements and confirm the 18 October deadline with Laura. */
             suggestedFirstAction: string;
         };
     };
