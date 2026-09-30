@@ -44,6 +44,8 @@ const initialConversation: ChatMessage[] = [
   { role: 'kate', text: 'Yes, the new rate applies for the rest of your current rate period. Your next payment will be collected on 3 October. I can also show you the full payment breakdown if that would be useful.', time: '09:44' },
 ];
 
+const helperConfirmationTemplate = 'I understand your question as: your monthly mortgage payment changed and you want to know why. Is that correct?';
+
 const createEscalationDossier = (): EscalationDossier => ({
   customer: 'Sophie Vermeulen',
   account: 'Home loan •••• 1098',
@@ -71,8 +73,8 @@ export default function HomePage() {
   const [serviceView, setServiceView] = useState(false);
   const [dossierOpen, setDossierOpen] = useState(false);
   const [messageDraft, setMessageDraft] = useState('');
-  const [sentMessages, setSentMessages] = useState<ChatMessage[]>([]);
-  const [helperDraft, setHelperDraft] = useState('');
+  const [sentMessages, setSentMessages] = useState<ChatMessage[]>(initialConversation);
+  const [helperDraft, setHelperDraft] = useState(helperConfirmationTemplate);
   const [helperMessages, setHelperMessages] = useState<ChatMessage[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
 
@@ -82,6 +84,7 @@ export default function HomePage() {
     }
 
     setEscalationRequest({ summary: 'requested', dossier: createEscalationDossier() });
+    setHelperDraft(helperConfirmationTemplate);
   };
 
   const sendMessage = (event: FormEvent<HTMLFormElement>) => {
@@ -109,13 +112,10 @@ export default function HomePage() {
 
   const sendHelperMessage = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const text = helperDraft.trim();
-
-    if (!text) {
-      return;
-    }
+    const text = helperDraft.trim() || helperConfirmationTemplate;
 
     setHelperMessages((messages) => [...messages, { role: 'human', text, time: '09:47' }]);
+    setSentMessages((messages) => [...messages, { role: 'human', text, time: '09:47' }]);
     setHelperDraft('');
   };
 
@@ -198,13 +198,10 @@ export default function HomePage() {
         <div className="kate-drawer-status"><span className="status-dot" /> Online now</div>
         <div className="chat-window">
           <div className="date-divider"><span>Today, 30 September</span></div>
-          {initialConversation.map((message, index) => message.role === 'customer' ? (
-            <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div>
-          ) : (
-            <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>
-          ))}
           {sentMessages.map((message, index) => message.role === 'customer' ? (
             <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div>
+          ) : message.role === 'human' ? (
+            <div className="message-row human-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny human-avatar">CS</div></div>
           ) : (
             <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>
           ))}
