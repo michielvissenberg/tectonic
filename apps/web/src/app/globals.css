@@ -1,24 +1,24 @@
 @import 'tailwindcss';
 
 :root {
-	--ink: #172421;
-	--muted: #687773;
-	--line: #dfe7e3;
-	--paper: #f7f9f6;
+	--ink: #1d2c3d;
+	--muted: #687b8f;
+	--line: #d9e3ec;
+	--paper: #f3f6f9;
 	--white: #ffffff;
-	--mint: #d7f1e5;
-	--green: #087f5b;
-	--deep-green: #075b46;
-	--yellow: #f8d84a;
+	--mint: #e5f2fb;
+	--green: #005eb8;
+	--deep-green: #003b71;
+	--yellow: #ffd500;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--paper); color: var(--ink); font-family: Georgia, 'Times New Roman', serif; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: Arial, Helvetica, sans-serif; }
 button { font: inherit; }
-.app-shell { min-height: 100vh; background: radial-gradient(circle at 76% 12%, #eef8f2 0, transparent 24%), var(--paper); }
+.app-shell { min-height: 100vh; background: linear-gradient(180deg, #ffffff 0, #f3f6f9 270px); }
 .topbar { height: 76px; padding: 0 5vw; display: flex; align-items: center; justify-content: space-between; background: var(--white); border-bottom: 1px solid var(--line); }
 .brand-lockup, .topbar-actions, .profile-block, .summary-heading, .chat-header, .kate-presence, .secure-status, .account-label-row, .account-nav-item, .requested-state { display: flex; align-items: center; }
-.brand-mark { width: 34px; height: 34px; display: grid; place-items: center; margin-right: 11px; border-radius: 50%; background: var(--yellow); color: var(--deep-green); font: 700 20px Georgia, serif; }
+.brand-mark { width: 58px; height: 34px; display: grid; place-items: center; margin-right: 11px; border-radius: 2px; background: var(--green); color: var(--white); box-shadow: inset 0 -4px var(--yellow); font: 800 15px Arial, sans-serif; letter-spacing: .03em; }
 .brand-name, .brand-context, .profile-name, .profile-detail, .eyebrow, .last-updated, .account-label-row, .account-nav-item p, .help-card p, .summary-metrics span, .summary-metrics small, .message-bubble p, .message-bubble time, .composer-placeholder, .requested-state small { margin: 0; }
 .brand-name { font-size: 16px; font-weight: 700; }.brand-context { color: var(--muted); font: 12px Arial, sans-serif; margin-top: 2px; }.topbar-actions { gap: 20px; }.secure-status, .last-updated { color: var(--muted); font: 12px Arial, sans-serif; }.status-dot { width: 7px; height: 7px; margin-right: 7px; display: inline-block; border-radius: 50%; background: #24a56f; }
 .avatar { flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; color: var(--deep-green); background: var(--mint); font: 700 12px Arial, sans-serif; }.avatar-small { width: 34px; height: 34px; }.avatar-large { width: 48px; height: 48px; margin-right: 13px; font-size: 14px; }.avatar-tiny, .kate-avatar { width: 28px; height: 28px; margin-top: 3px; }.kate-avatar { background: var(--yellow); font-size: 16px; }

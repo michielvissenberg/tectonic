@@ -9,9 +9,9 @@ export default function HomePage() {
     <main className="app-shell">
       <header className="topbar">
         <div className="brand-lockup">
-          <div className="brand-mark">K</div>
+          <div className="brand-mark" aria-label="KBC">KBC</div>
           <div>
-            <p className="brand-name">KBC mobile</p>
+            <p className="brand-name">KBC Mobile</p>
             <p className="brand-context">Personal banking</p>
           </div>
         </div>
