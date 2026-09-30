@@ -1,8 +1,71 @@
 # Tectonic
 
-Turborepo with a NestJS API, Next.js web app, PostgreSQL database, and typed SDK.
+Tectonic is a demo environment for a customer-service workflow around an AI assistant in a KBC mobile banking app. The project explores how a banking assistant can triage a mortgage question, package the relevant context into a dossier, and hand the case to a human specialist without implying the bot solved the issue on its own.
 
-## Start the project
+## KBC problem story
+
+The experience is intentionally framed around a realistic but synthetic mortgage support scenario:
+
+- A customer notices a monthly mortgage payment increase.
+- Kate explains the general idea of the account but cannot decide whether the answer is final or document-specific.
+- The case is escalated to a human specialist with the original conversation, account context, and three relevant mortgage documents attached.
+- The specialist reviews the dossier and sends a confirmation message back to the customer without requiring them to re-explain the problem.
+
+This is a product and UX prototype, not a production banking workflow.
+
+## Demo flow
+
+The guided demo is designed to fit comfortably inside a sub-three-minute walkthrough:
+
+1. Open the customer view and click the Kate drawer.
+2. Ask Kate about the mortgage payment change or trigger the human handoff.
+3. Confirm the customer-facing status message: the request is in human review.
+4. Switch to the customer service workspace and open the escalation dossier.
+5. Review the generated summary, source conversation, account facts, and linked mortgage documents.
+6. Send the helper confirmation message back to the customer.
+
+## Synthetic-data boundary
+
+All customer data in this repo is synthetic and fictional.
+
+- Names, balances, mortgage terms, and date values are example data.
+- No real customer records, private account numbers, or production secrets are used.
+- The project does not connect to a live banking system, real document store, or external identity provider.
+
+## Security and trust choices
+
+This repository deliberately stays on the safe side of trust/confusion boundaries:
+
+- The customer-facing status clearly says the case is under human review.
+- The internal dossier is labeled as internal and remains separate from the customer-facing message flow.
+- The generated summary does not claim that Kate resolved the issue.
+- The source conversation is preserved beside the summary so the human reviewer can validate the context.
+- Phone support and voice assistance are explicitly left out of scope.
+
+## Scale story and product vision
+
+The mock-up is meant to illustrate a scalable escalation pattern for digital banking support:
+
+- common account questions can be answered by an assistant;
+- document-heavy or ambiguous questions can be escalated with context preserved;
+- human agents receive a summarized dossier instead of starting from zero;
+- the assistant remains an assistant, not a system that pretends it solved the issue alone.
+
+This keeps the demo believable without over-claiming enterprise readiness or real customer data handling.
+
+## Current limitations
+
+This project is intentionally limited to a local prototype experience:
+
+- no real-time multi-user chat transport;
+- no persistence beyond browser-local state;
+- no real document indexing or retrieval;
+- no real customer authentication or case management system;
+- no phone or voice support implementation.
+
+Phone support is future work, not part of the current demo.
+
+## Local development
 
 Prerequisites: Node.js 20+, pnpm 10+, and Docker.
 
