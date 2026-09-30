@@ -2,9 +2,22 @@
 
 import { useState } from 'react';
 
+type EscalationRequest = {
+  summary: 'requested';
+  dossier: 'requested';
+};
+
 export default function HomePage() {
   const [kateOpen, setKateOpen] = useState(true);
-  const [humanRequested, setHumanRequested] = useState(false);
+  const [escalationRequest, setEscalationRequest] = useState<EscalationRequest | null>(null);
+
+  const requestHumanHelp = () => {
+    if (escalationRequest) {
+      return;
+    }
+
+    setEscalationRequest({ summary: 'requested', dossier: 'requested' });
+  };
 
   return (
     <main className="app-shell">
@@ -78,9 +91,13 @@ export default function HomePage() {
           <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>Hi Sophie, of course. I’ve had a look at your home loan. Your interest rate was adjusted at the start of this month, which changed the monthly payment from € 1,230.25 to € 1,248.67.</p><time>09:42</time></div></div>
           <div className="message-row customer-message"><div className="message-bubble"><p>Okay, that makes sense. Is this a permanent change?</p><time>09:43</time></div><div className="avatar avatar-tiny">SV</div></div>
           <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>Yes, the new rate applies for the rest of your current rate period. Your next payment will be collected on 3 October. I can also show you the full payment breakdown if that would be useful.</p><time>09:44</time></div></div>
+          {escalationRequest && <>
+            <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>I’m sorry, I can’t handle this document-specific mortgage question. I’ll ask a human teammate to help.</p><time>09:45</time></div></div>
+            <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>I’ll send this conversation and a summary to a human helper, so you won’t need to repeat what happened.</p><time>09:45</time></div></div>
+          </>}
         </div>
         <div className="chat-action">
-          {humanRequested ? <div className="requested-state"><span>✓</span><div><strong>A human teammate has been requested</strong><small>Someone will join this conversation shortly.</small></div></div> : <><div className="composer-placeholder">Ask Kate a question...</div><button className="human-button" type="button" onClick={() => setHumanRequested(true)}><span>↗</span> Talk to a human</button></>}
+          {escalationRequest ? <div className="requested-state" role="status" aria-live="polite"><span>✓</span><div><strong>Your request was sent to customer service</strong><small>Someone will join this conversation shortly.</small></div></div> : <><div className="composer-placeholder">Ask Kate a question...</div><button className="human-button" type="button" onClick={requestHumanHelp}><span>↗</span> Talk to a human</button></>}
         </div>
       </aside>
     </main>
