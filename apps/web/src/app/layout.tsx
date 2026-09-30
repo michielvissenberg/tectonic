@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Tectonic',
-  description: 'Tectonic web app',
+  title: 'KBC mobile | Personal banking',
+  description: 'Your KBC personal banking overview',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
