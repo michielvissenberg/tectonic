@@ -22,6 +22,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kate/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get Kate's next reply to the Kate conversation */
+        post: operations["KateController_reply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -33,6 +50,22 @@ export interface components {
         SettingResponseDto: {
             /** @example Hello from Tectonic */
             value: string;
+        };
+        KateMessageDto: {
+            /**
+             * @example customer
+             * @enum {string}
+             */
+            role: "customer" | "kate";
+            /** @example Why did my monthly mortgage payment change? */
+            text: string;
+        };
+        KateReplyRequestDto: {
+            messages: components["schemas"]["KateMessageDto"][];
+        };
+        KateReplyResponseDto: {
+            /** @example Your interest rate was adjusted at the start of September. */
+            text: string;
         };
     };
     responses: never;
@@ -84,6 +117,51 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SettingResponseDto"];
                 };
+            };
+        };
+    };
+    KateController_reply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KateReplyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Kate's reply */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KateReplyResponseDto"];
+                };
+            };
+            /** @description Invalid Kate conversation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Gemini could not reply */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kate is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
