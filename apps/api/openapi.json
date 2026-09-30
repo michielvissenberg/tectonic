@@ -108,9 +108,10 @@
       },
       "KateReplyResponseDto": {
         "type": "object",
-        "required": ["text"],
+        "required": ["text", "escalate"],
         "properties": {
-          "text": { "type": "string", "example": "Your interest rate was adjusted at the start of September." }
+          "text": { "type": "string", "example": "Your interest rate was adjusted at the start of September." },
+          "escalate": { "type": "boolean", "description": "True when Kate started a human escalation; text is then her handoff message.", "example": false }
         }
       }
     }

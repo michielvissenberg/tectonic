@@ -66,6 +66,11 @@ export interface components {
         KateReplyResponseDto: {
             /** @example Your interest rate was adjusted at the start of September. */
             text: string;
+            /**
+             * @description True when Kate started a human escalation; text is then her handoff message.
+             * @example false
+             */
+            escalate: boolean;
         };
     };
     responses: never;
