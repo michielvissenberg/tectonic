@@ -17,6 +17,8 @@ pnpm dev
 
 `pnpm db:setup` starts the local PostgreSQL database, runs migrations, and generates the Prisma client.
 
+Kate replies with Gemini on Vertex AI. Put your own Vertex API key in `VERTEX_API_KEY` in `apps/api/.env` (the file is gitignored; never commit the key). The key stays in the API and never reaches the browser. Without a key, Kate shows a fallback message. `VERTEX_MODEL` picks the Gemini model.
+
 Useful database commands:
 
 ```sh

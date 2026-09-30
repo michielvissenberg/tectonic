@@ -1,6 +1,12 @@
 'use client';
 
 import { type FormEvent, useState } from 'react';
+import { createSdkClient } from '@tectonic/sdk';
+
+const api = createSdkClient(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001');
+const kateFallbackReply = 'Sorry, I can\'t reply right now. Please try again in a moment, or ask to talk to a human.';
+
+const currentTime = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
 type EscalationRequest = {
   summary: 'requested';
@@ -74,6 +80,7 @@ export default function HomePage() {
   const [dossierOpen, setDossierOpen] = useState(false);
   const [messageDraft, setMessageDraft] = useState('');
   const [sentMessages, setSentMessages] = useState<ChatMessage[]>(initialConversation);
+  const [kateReplying, setKateReplying] = useState(false);
   const [helperDraft, setHelperDraft] = useState(helperConfirmationTemplate);
   const [helperMessages, setHelperMessages] = useState<ChatMessage[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
@@ -92,15 +99,16 @@ export default function HomePage() {
     ]);
   };
 
-  const sendMessage = (event: FormEvent<HTMLFormElement>) => {
+  const sendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const text = messageDraft.trim();
 
-    if (!text || escalationRequest) {
+    if (!text || escalationRequest || kateReplying) {
       return;
     }
 
-    setSentMessages((messages) => [...messages, { role: 'customer', text, time: '09:45' }]);
+    const customerMessage: ChatMessage = { role: 'customer', text, time: currentTime() };
+    setSentMessages((messages) => [...messages, customerMessage]);
     setMessageDraft('');
 
     if (/\b(human|person|helper|agent|customer service)\b/i.test(text)) {
@@ -108,11 +116,14 @@ export default function HomePage() {
       return;
     }
 
-    setSentMessages((messages) => [...messages, {
-      role: 'kate',
-      text: 'I can help explain your mortgage payments. For document-specific questions, you can ask me to connect you with a human teammate.',
-      time: '09:46',
-    }]);
+    const kateConversation = [...sentMessages, customerMessage]
+      .filter((message) => message.role !== 'human')
+      .map(({ role, text: messageText }) => ({ role: role as 'customer' | 'kate', text: messageText }));
+
+    setKateReplying(true);
+    const { data } = await api.POST('/kate/reply', { body: { messages: kateConversation } }).catch(() => ({ data: undefined }));
+    setKateReplying(false);
+    setSentMessages((messages) => [...messages, { role: 'kate', text: data?.text ?? kateFallbackReply, time: currentTime() }]);
   };
 
   const sendHelperMessage = (event: FormEvent<HTMLFormElement>) => {
@@ -210,9 +221,10 @@ export default function HomePage() {
           ) : (
             <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>
           ))}
+          {kateReplying && <div className="message-row kate-message" role="status" aria-live="polite"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>Kate is typing…</p></div></div>}
         </div>
         <div className="chat-action">
-          {escalationRequest ? <div className="requested-state" role="status" aria-live="polite"><span>✓</span><div><strong>Your request was sent to customer service</strong><small>Someone will join this conversation shortly.</small></div></div> : <><form className="composer-form" onSubmit={sendMessage}><input className="composer-input" type="text" value={messageDraft} onChange={(event) => setMessageDraft(event.target.value)} placeholder="Ask Kate a question..." aria-label="Message Kate" /><button className="send-button" type="submit" aria-label="Send message">Send</button></form><button className="human-button" type="button" onClick={requestHumanHelp}><span>↗</span> Talk to a human</button></>}
+          {escalationRequest ? <div className="requested-state" role="status" aria-live="polite"><span>✓</span><div><strong>Your request was sent to customer service</strong><small>Someone will join this conversation shortly.</small></div></div> : <><form className="composer-form" onSubmit={sendMessage}><input className="composer-input" type="text" value={messageDraft} onChange={(event) => setMessageDraft(event.target.value)} placeholder="Ask Kate a question..." aria-label="Message Kate" /><button className="send-button" type="submit" aria-label="Send message" disabled={kateReplying}>Send</button></form><button className="human-button" type="button" onClick={requestHumanHelp}><span>↗</span> Talk to a human</button></>}
         </div>
       </aside>
     </main>
