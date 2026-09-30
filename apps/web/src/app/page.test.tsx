@@ -16,7 +16,7 @@ describe('helper confirmation flow', () => {
     fireEvent.click(screen.getByRole('button', { name: /talk to a human/i }));
 
     fireEvent.click(screen.getByRole('button', { name: /customer service view/i }));
-    fireEvent.click(screen.getByRole('button', { name: /open sophie/i }));
+    fireEvent.click(screen.getByRole('button', { name: /open laura/i }));
 
     expect(screen.getByText(/Your request was sent to customer service/i)).toBeInTheDocument();
     expect(screen.getByText(/Customer status: Human review in progress/i)).toBeInTheDocument();
@@ -29,15 +29,15 @@ describe('helper confirmation flow', () => {
     fireEvent.click(screen.getByRole('button', { name: /talk to a human/i }));
 
     fireEvent.click(screen.getByRole('button', { name: /customer service view/i }));
-    fireEvent.click(screen.getByRole('button', { name: /open sophie/i }));
+    fireEvent.click(screen.getByRole('button', { name: /open laura/i }));
 
-    const helperInput = screen.getByLabelText('Reply to Sophie');
+    const helperInput = screen.getByLabelText('Reply to Laura');
     expect(helperInput).toHaveValue(
-      'I understand your question as: your monthly mortgage payment changed and you want to know why. Is that correct?',
+      'I understand your question as: you want to know whether your mortgage application can be approved in time for the loan condition in your compromis. Is that correct?',
     );
 
     fireEvent.change(helperInput, {
-      target: { value: 'I understand your question as: your monthly mortgage payment changed and you want to know why. Is that correct?' },
+      target: { value: 'I understand your question as: you want to know whether your mortgage application can be approved in time for the loan condition in your compromis. Is that correct?' },
     });
     fireEvent.click(screen.getByRole('button', { name: /send/i }));
 

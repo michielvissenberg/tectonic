@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { BadGatewayException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import {
   FunctionCallingConfigMode,
@@ -7,11 +9,14 @@ import {
   type FunctionDeclaration,
   type GenerateContentConfig,
   type GenerateContentParameters,
+  type Part,
 } from '@google/genai';
 import { dossierSystemInstruction, kateDocuments, kateSystemInstruction } from './kate-context.js';
 import type { KateDossierResponseDto, KateMessageDto, KateReplyResponseDto } from './kate.dto.js';
 
 const defaultModel = 'gemini-3.6-flash';
+// The repo's `documents/` folder, from both `src/` and the compiled `dist/`.
+const documentsDir = join(__dirname, '..', '..', '..', 'documents');
 const defaultHandoffMessage = 'I\'m sorry, I can\'t resolve this for you myself. I\'ll ask a human teammate to help.';
 
 // Kate's only action: hand the Kate conversation over to a human customer-service worker.
@@ -98,7 +103,7 @@ export class KateService {
   async dossier(messages: KateMessageDto[]): Promise<KateDossierResponseDto> {
     const transcript = messages.map((message) => `${message.role === 'customer' ? 'Customer' : 'Kate'}: ${message.text}`).join('\n');
     const response = await this.generate(
-      [{ role: 'user', parts: [{ text: `Kate conversation:\n${transcript}` }] }],
+      [{ role: 'user', parts: [{ text: `Kate conversation:\n${transcript}` }, ...(await this.documentParts())] }],
       {
         systemInstruction: dossierSystemInstruction,
         responseMimeType: 'application/json',
@@ -115,6 +120,21 @@ export class KateService {
     }
 
     return dossier;
+  }
+
+  // The customer's documents as PDF parts, each preceded by its title so Gemini can name it.
+  private async documentParts(): Promise<Part[]> {
+    const parts = await Promise.all(kateDocuments.map(async (document): Promise<Part[]> => {
+      try {
+        const data = (await readFile(join(documentsDir, document.file))).toString('base64');
+        return [{ text: `Document: ${document.title}` }, { inlineData: { mimeType: 'application/pdf', data } }];
+      } catch {
+        this.logger.warn(`Document not found, left out of the dossier: ${document.file}`);
+        return [];
+      }
+    }));
+
+    return parts.flat();
   }
 
   private async generate(contents: GenerateContentParameters['contents'], config: GenerateContentConfig, failureMessage: string) {
@@ -179,7 +199,7 @@ function parseDossier(json: string | undefined): KateDossierResponseDto | null {
     }
 
     seen.add(document.title);
-    return [{ ...document, relevance: item.relevance.trim() }];
+    return [{ title: document.title, type: document.type, date: document.date, relevance: item.relevance.trim() }];
   });
 
   return {

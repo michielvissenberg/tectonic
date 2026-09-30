@@ -38,53 +38,57 @@ type EscalationDossier = {
   kateAlreadyChecked: string[];
   suggestedFirstAction: string;
   sourceConversation: ChatMessage[];
-  accountContext: {
-    balance: string;
-    monthlyPayment: string;
-    paymentChange: string;
-    nextPayment: string;
-  };
+  accountContext: { label: string; value: string }[];
   documents: DossierDocument[];
 };
 
 const initialConversation: ChatMessage[] = [
-  { role: 'customer', text: 'Hi Kate, I noticed my monthly mortgage payment is higher this month. Can you tell me why it changed?', time: '09:41' },
-  { role: 'kate', text: 'Hi Sophie, of course. I\'ve had a look at your home loan. Your interest rate was adjusted at the start of this month, which changed the monthly payment from € 1,230.25 to € 1,248.67.', time: '09:42' },
-  { role: 'customer', text: 'Okay, that makes sense. Is this a permanent change?', time: '09:43' },
-  { role: 'kate', text: 'Yes, the new rate applies for the rest of your current rate period. Your next payment will be collected on 3 October. I can also show you the full payment breakdown if that would be useful.', time: '09:44' },
+  { role: 'customer', text: 'Hi Kate, we signed the compromis for Parklaan 14 today. Did our mortgage application come through?', time: '09:41' },
+  { role: 'kate', text: 'Hi Laura, yes. I can see your application for a home loan of € 305,000 for Parklaan 14, together with the documents you uploaded. It is now waiting for review by a KBC advisor.', time: '09:42' },
+  { role: 'customer', text: 'Great. And the money for the down payment, is that in our savings account?', time: '09:43' },
+  { role: 'kate', text: 'Your KBC Savings account holds € 74,200.00 and your joint KBC Plus account € 8,420.50. An advisor will check your own funds when they review the application.', time: '09:44' },
 ];
+
+// Synthetic documents uploaded with the mortgage application; the API reads the same files from `documents/`.
+const applicationDocuments: DossierDocument[] = [
+  { title: 'Sales agreement (compromis) Parklaan 14', type: 'Agreement', date: '30 September 2026' },
+  { title: 'Energy performance certificate Parklaan 14', type: 'Certificate', date: '12 September 2026' },
+  { title: 'Renovation quote EcoBouw', type: 'Quote', date: '22 September 2026' },
+  { title: 'Payslip August 2026, Thomas De Smet', type: 'Payslip', date: '28 August 2026' },
+  { title: 'Annual accounts 2025, Studio Laura', type: 'Annual accounts', date: '31 December 2025' },
+  { title: 'KBC own funds overview', type: 'Account overview', date: '30 September 2026' },
+  { title: 'Immoweb listing Parklaan 14', type: 'Listing', date: 'Undated' },
+  { title: 'Fluvius energy invoice July 2026', type: 'Invoice', date: '14 July 2026' },
+  { title: 'KBC car insurance policy', type: 'Insurance policy', date: 'Undated' },
+].map((document) => ({ ...document, relevance: 'Uploaded with the mortgage application; not yet checked for relevance.' }));
 
 const buttonHandoffMessage = 'Of course. I’ll ask a human teammate to help.';
 const humanJoiningMessage = 'A human helper will join this chat shortly, so you won’t need to repeat what happened.';
 
-const helperConfirmationTemplate = 'I understand your question as: your monthly mortgage payment changed and you want to know why. Is that correct?';
+const helperConfirmationTemplate = 'I understand your question as: you want to know whether your mortgage application can be approved in time for the loan condition in your compromis. Is that correct?';
 
-const fallbackSummary = 'The summary could not be generated. Sophie asked for human help from the Kate conversation; read the source Kate conversation for the full context.';
+const fallbackSummary = 'The summary could not be generated. Laura asked for human help from the Kate conversation; read the source Kate conversation for the full context.';
 
 // Customer identity, account context, timestamps and status are deterministic. The other fields start as a
 // deterministic fallback and are replaced by the generated dossier content once Gemini returns it.
 const createEscalationDossier = (sourceConversation: ChatMessage[]): EscalationDossier => ({
-  customer: 'Sophie Vermeulen',
-  account: 'Home loan •••• 1098',
+  customer: 'Laura Peeters',
+  account: 'Mortgage application, Parklaan 14 Leuven',
   createdAt: `30 September 2026, ${currentTime()}`,
   status: 'sent',
   generation: 'generating',
   generatedSummary: 'Generating the summary from the Kate conversation…',
   unresolvedQuestion: sourceConversation.findLast((message) => message.role === 'customer')?.text ?? 'Not recorded.',
   kateAlreadyChecked: [],
-  suggestedFirstAction: 'Read the source Kate conversation, then confirm the customer\'s question with Sophie.',
+  suggestedFirstAction: 'Read the source Kate conversation, then confirm the customer\'s question with Laura.',
   sourceConversation,
-  accountContext: {
-    balance: 'EUR 238,450.12',
-    monthlyPayment: 'EUR 1,248.67',
-    paymentChange: '+ EUR 18.42 this month',
-    nextPayment: '03 October 2026',
-  },
-  documents: [
-    { title: 'Mortgage agreement', type: 'Agreement', date: '12 June 2018', relevance: 'Confirms the rate period and payment terms for this home loan.' },
-    { title: 'Repayment schedule', type: 'Schedule', date: '01 September 2026', relevance: 'Shows the updated monthly amount and future payment breakdown.' },
-    { title: 'Latest monthly statement', type: 'Statement', date: '30 September 2026', relevance: 'Shows the first statement containing the EUR 18.42 payment increase.' },
+  accountContext: [
+    { label: 'Purchase price', value: 'EUR 340,000.00' },
+    { label: 'Requested loan', value: 'EUR 305,000.00' },
+    { label: 'Savings and current account', value: 'EUR 82,620.50' },
+    { label: 'Application status', value: 'Awaiting advisor review' },
   ],
+  documents: applicationDocuments,
 });
 
 export default function HomePage() {
@@ -199,13 +203,13 @@ export default function HomePage() {
           <span className="secure-status"><span className="status-dot" /> Secure session</span>
           <button className="view-switch" type="button" onClick={() => { setServiceView((isServiceView) => !isServiceView); setDossierOpen(false); setKateOpen(false); }}>{serviceView ? 'Customer view' : 'Customer service view'}</button>
           {!serviceView && <button className="kate-trigger" type="button" onClick={() => setKateOpen(true)}><span className="kate-trigger-icon">K</span> Ask Kate</button>}
-          <div className="avatar avatar-small">SV</div>
+          <div className="avatar avatar-small">LP</div>
         </div>
       </header>
 
       <div className="page-heading">
         <div>
-          <p className="eyebrow">{serviceView ? 'Customer service workspace' : 'Good morning, Sophie'}</p>
+          <p className="eyebrow">{serviceView ? 'Customer service workspace' : 'Good morning, Laura'}</p>
           <h1>{serviceView ? 'Escalation desk' : 'Your financial overview'}</h1>
         </div>
         <span className="last-updated">{serviceView ? 'Internal view' : 'Updated just now'}</span>
@@ -214,22 +218,22 @@ export default function HomePage() {
       <section className="workspace-grid">
         <aside className="account-panel">
           <div className="profile-block">
-            <div className="avatar avatar-large">SV</div>
+            <div className="avatar avatar-large">LP</div>
             <div>
-              <p className="profile-name">Sophie Vermeulen</p>
-              <p className="profile-detail">Customer since 2018</p>
+              <p className="profile-name">Laura Peeters</p>
+              <p className="profile-detail">Studio Laura CommV</p>
             </div>
           </div>
 
           <div className="account-divider" />
           <div className="account-label-row"><span>Accounts</span><span className="account-count">3</span></div>
           <nav className="account-nav" aria-label="Accounts">
-            <button className="account-nav-item" type="button"><span className="account-icon">€</span><span><strong>Current account</strong><small>BE32 7350 •••• 4821</small></span><span className="nav-chevron">›</span></button>
-            <button className="account-nav-item active" type="button"><span className="account-icon home-icon">⌂</span><span><strong>Home loan</strong><small>Mortgage •••• 1098</small></span><span className="nav-chevron">›</span></button>
-            <button className="account-nav-item" type="button"><span className="account-icon">▤</span><span><strong>Savings account</strong><small>BE32 7350 •••• 9350</small></span><span className="nav-chevron">›</span></button>
+            <button className="account-nav-item" type="button"><span className="account-icon">€</span><span><strong>KBC Plus account</strong><small>BE42 7351 •••• 1104</small></span><span className="nav-chevron">›</span></button>
+            <button className="account-nav-item active" type="button"><span className="account-icon home-icon">⌂</span><span><strong>Mortgage application</strong><small>Parklaan 14, Leuven</small></span><span className="nav-chevron">›</span></button>
+            <button className="account-nav-item" type="button"><span className="account-icon">▤</span><span><strong>Savings account</strong><small>BE89 7350 •••• 8831</small></span><span className="nav-chevron">›</span></button>
           </nav>
 
-          {serviceView && escalationRequest && <button className={`dossier-entry${dossierOpen ? ' is-open' : ''}`} type="button" onClick={() => setDossierOpen(true)}><span className="dossier-entry-icon">↗</span><span><strong>Escalation dossier</strong><small>{dossierOpen ? 'Currently open' : 'Open for Sophie'}</small></span><span className="nav-chevron">›</span></button>}
+          {serviceView && escalationRequest && <button className={`dossier-entry${dossierOpen ? ' is-open' : ''}`} type="button" onClick={() => setDossierOpen(true)}><span className="dossier-entry-icon">↗</span><span><strong>Escalation dossier</strong><small>{dossierOpen ? 'Currently open' : 'Open for Laura'}</small></span><span className="nav-chevron">›</span></button>}
 
           <div className="help-card">
             <span className="help-icon">?</span>
@@ -241,20 +245,20 @@ export default function HomePage() {
           <div className="dossier-header"><div><p className="eyebrow">Internal escalation dossier</p><h2>{escalationRequest.dossier.customer}</h2><p className="dossier-account">{escalationRequest.dossier.account}</p></div><span className="dossier-status">{escalationRequest.dossier.status}</span></div>
           <div className="dossier-meta"><span><strong>Created</strong>{escalationRequest.dossier.createdAt}</span><span><strong>Source</strong>Kate conversation</span></div>
           <div className="worker-workspace">
-            <div className="dossier-column"><section className="dossier-section"><div className="section-heading"><h3>Generated summary</h3><span>{{ generating: 'Generating…', generated: 'Generated', fallback: 'Not generated' }[escalationRequest.dossier.generation]}</span></div><p>{escalationRequest.dossier.generatedSummary}</p></section><section className="dossier-section"><h3>Unresolved question</h3><p className="question-callout">{escalationRequest.dossier.unresolvedQuestion}</p></section><section className="dossier-section"><h3>What Kate already checked</h3>{escalationRequest.dossier.kateAlreadyChecked.length > 0 ? <ul>{escalationRequest.dossier.kateAlreadyChecked.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p>Nothing recorded.</p>}</section><section className="dossier-section"><h3>Suggested first action</h3><p>{escalationRequest.dossier.suggestedFirstAction}</p></section><section className="dossier-section source-section"><div className="section-heading"><div><h3>Source Kate conversation</h3><p className="chat-context">The context sent with the escalation</p></div><span>Internal</span></div><div className="worker-chat-window"><div className="date-divider"><span>Today, 30 September</span></div>{escalationRequest.dossier.sourceConversation.map((message, index) => message.role === 'customer' ? <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div> : <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>)}</div></section></div>
-            <div className="dossier-column"><section className="dossier-section"><h3>Mortgage account context</h3><div className="context-grid"><span>Balance<strong>{escalationRequest.dossier.accountContext.balance}</strong></span><span>Monthly payment<strong>{escalationRequest.dossier.accountContext.monthlyPayment}</strong></span><span>Change<strong>{escalationRequest.dossier.accountContext.paymentChange}</strong></span><span>Next payment<strong>{escalationRequest.dossier.accountContext.nextPayment}</strong></span></div></section><section className="dossier-section"><h3>Linked documents</h3><div className="document-list">{escalationRequest.dossier.documents.length === 0 && <p>No documents linked.</p>}{escalationRequest.dossier.documents.map((document) => <button className={`document-item${selectedDocument === document.title ? ' is-selected' : ''}`} type="button" aria-pressed={selectedDocument === document.title} key={document.title} onClick={() => setSelectedDocument(document.title)}><div className="document-icon">▤</div><div><strong>{document.title}</strong><small>{document.type} · {document.date}</small><p>{document.relevance}</p></div></button>)}</div></section></div>
-            <section className="dossier-section helper-panel"><div className="section-heading"><div><h3>Helper chat</h3><p className="chat-context">Ready for your reply</p></div><span>Internal</span></div><div className="helper-chat-window">{helperMessages.length === 0 && <p className="helper-empty">Send a message to continue the conversation with Sophie.</p>}{helperMessages.map((message, index) => <div className="message-row human-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny human-avatar">CS</div></div>)}</div><form className="worker-composer" onSubmit={sendHelperMessage}><input className="composer-input" type="text" value={helperDraft} onChange={(event) => setHelperDraft(event.target.value)} placeholder="Reply to Sophie..." aria-label="Reply to Sophie" /><button className="send-button" type="submit">Send</button></form></section>
+            <div className="dossier-column"><section className="dossier-section"><div className="section-heading"><h3>Generated summary</h3><span>{{ generating: 'Generating…', generated: 'Generated', fallback: 'Not generated' }[escalationRequest.dossier.generation]}</span></div><p>{escalationRequest.dossier.generatedSummary}</p></section><section className="dossier-section"><h3>Unresolved question</h3><p className="question-callout">{escalationRequest.dossier.unresolvedQuestion}</p></section><section className="dossier-section"><h3>What Kate already checked</h3>{escalationRequest.dossier.kateAlreadyChecked.length > 0 ? <ul>{escalationRequest.dossier.kateAlreadyChecked.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p>Nothing recorded.</p>}</section><section className="dossier-section"><h3>Suggested first action</h3><p>{escalationRequest.dossier.suggestedFirstAction}</p></section><section className="dossier-section source-section"><div className="section-heading"><div><h3>Source Kate conversation</h3><p className="chat-context">The context sent with the escalation</p></div><span>Internal</span></div><div className="worker-chat-window"><div className="date-divider"><span>Today, 30 September</span></div>{escalationRequest.dossier.sourceConversation.map((message, index) => message.role === 'customer' ? <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">LP</div></div> : <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>)}</div></section></div>
+            <div className="dossier-column"><section className="dossier-section"><h3>Mortgage application context</h3><div className="context-grid">{escalationRequest.dossier.accountContext.map(({ label, value }) => <span key={label}>{label}<strong>{value}</strong></span>)}</div></section><section className="dossier-section"><h3>Linked documents</h3><div className="document-list">{escalationRequest.dossier.documents.length === 0 && <p>No documents linked.</p>}{escalationRequest.dossier.documents.map((document) => <button className={`document-item${selectedDocument === document.title ? ' is-selected' : ''}`} type="button" aria-pressed={selectedDocument === document.title} key={document.title} onClick={() => setSelectedDocument(document.title)}><div className="document-icon">▤</div><div><strong>{document.title}</strong><small>{document.type} · {document.date}</small><p>{document.relevance}</p></div></button>)}</div></section></div>
+            <section className="dossier-section helper-panel"><div className="section-heading"><div><h3>Helper chat</h3><p className="chat-context">Ready for your reply</p></div><span>Internal</span></div><div className="helper-chat-window">{helperMessages.length === 0 && <p className="helper-empty">Send a message to continue the conversation with Laura.</p>}{helperMessages.map((message, index) => <div className="message-row human-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny human-avatar">CS</div></div>)}</div><form className="worker-composer" onSubmit={sendHelperMessage}><input className="composer-input" type="text" value={helperDraft} onChange={(event) => setHelperDraft(event.target.value)} placeholder="Reply to Laura..." aria-label="Reply to Laura" /><button className="send-button" type="submit">Send</button></form></section>
           </div>
-        </section> : serviceView ? <section className="main-panel service-landing"><p className="eyebrow">Customer service workspace</p><h2>Select an escalation dossier</h2>{escalationRequest ? <><div className="requested-state" role="status" aria-live="polite"><span>✓</span><div><strong>Your request was sent to customer service</strong><small>Customer status: Human review in progress. Your mortgage question is being reviewed by a human specialist.</small></div></div><p>Sophie Vermeulen has requested help with her home loan. Open the dossier from the selected account to review the conversation and relevant documents.</p><button className="secondary-button" type="button" onClick={() => setDossierOpen(true)}>Open Sophie&apos;s dossier <span>→</span></button></> : <p>No escalation dossiers are available for this demo account yet.</p>}</section> : <section className="main-panel">
+        </section> : serviceView ? <section className="main-panel service-landing"><p className="eyebrow">Customer service workspace</p><h2>Select an escalation dossier</h2>{escalationRequest ? <><div className="requested-state" role="status" aria-live="polite"><span>✓</span><div><strong>Your request was sent to customer service</strong><small>Customer status: Human review in progress. Your mortgage question is being reviewed by a human specialist.</small></div></div><p>Laura Peeters has requested help with her mortgage application. Open the dossier from the selected account to review the conversation and relevant documents.</p><button className="secondary-button" type="button" onClick={() => setDossierOpen(true)}>Open Laura&apos;s dossier <span>→</span></button></> : <p>No escalation dossiers are available for this demo account yet.</p>}</section> : <section className="main-panel">
           <div className="mortgage-summary">
-            <div className="summary-heading"><div><p className="eyebrow">Home loan</p><h2>Mortgage account</h2></div><span className="account-status">Active</span></div>
+            <div className="summary-heading"><div><p className="eyebrow">Parklaan 14, Leuven</p><h2>Mortgage application</h2></div><span className="account-status">In review</span></div>
             <div className="summary-metrics">
-              <div><span>Outstanding balance</span><strong>€ 238,450.12</strong></div>
-              <div><span>Monthly payment</span><strong>€ 1,248.67</strong><small className="payment-change">↑ € 18.42 this month</small></div>
-              <div><span>Next payment</span><strong>03 Oct 2026</strong></div>
+              <div><span>Purchase price</span><strong>€ 340,000.00</strong></div>
+              <div><span>Requested loan</span><strong>€ 305,000.00</strong></div>
+              <div><span>Application received</span><strong>30 Sep 2026</strong></div>
             </div>
           </div>
-          <div className="account-content-placeholder"><p className="eyebrow">Recent activity</p><h2>Your home loan is up to date</h2><p>Your latest payment was received on 03 September 2026. Open Kate for a clear explanation of the payment change.</p><button className="secondary-button" type="button" onClick={() => setKateOpen(true)}>Open Kate <span>→</span></button></div>
+          <div className="account-content-placeholder"><p className="eyebrow">Recent activity</p><h2>Your documents were received</h2><p>You uploaded 9 documents with your application on 30 September 2026. A KBC advisor will review your application. Open Kate if you have a question in the meantime.</p><button className="secondary-button" type="button" onClick={() => setKateOpen(true)}>Open Kate <span>→</span></button></div>
         </section>}
       </section>
 
@@ -265,7 +269,7 @@ export default function HomePage() {
         <div className="chat-window">
           <div className="date-divider"><span>Today, 30 September</span></div>
           {sentMessages.map((message, index) => message.role === 'customer' ? (
-            <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div>
+            <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">LP</div></div>
           ) : message.role === 'human' ? (
             <div className="message-row human-message" key={`${message.time}-${index}`}><div className="avatar avatar-tiny human-avatar">CS</div><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>
           ) : (
