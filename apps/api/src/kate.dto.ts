@@ -19,4 +19,7 @@ export class KateReplyRequestDto {
 export class KateReplyResponseDto {
   @ApiProperty({ example: 'Your interest rate was adjusted at the start of September.' })
   text!: string;
+
+  @ApiProperty({ description: 'True when Kate started a human escalation; text is then her handoff message.', example: false })
+  escalate!: boolean;
 }

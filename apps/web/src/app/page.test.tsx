@@ -9,10 +9,7 @@ describe('helper confirmation flow', () => {
   it('prefills the worker confirmation with the dossier summary and sends it to the customer chat', () => {
     render(React.createElement(HomePage));
 
-    fireEvent.change(screen.getByLabelText('Message Kate'), {
-      target: { value: 'I need a human helper' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /send message/i }));
+    fireEvent.click(screen.getByRole('button', { name: /talk to a human/i }));
 
     fireEvent.click(screen.getByRole('button', { name: /customer service view/i }));
     fireEvent.click(screen.getByRole('button', { name: /open sophie/i }));
