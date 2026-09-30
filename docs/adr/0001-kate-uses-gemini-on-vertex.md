@@ -19,6 +19,7 @@ The POC started with scripted Kate replies. A scripted Kate cannot show whether 
 - If Gemini is unconfigured or fails, the API returns an error without request details and the web app shows a fallback reply.
 - Gemini has exactly one tool, `start_human_escalation`. Kate calls it when she cannot resolve the problem or the customer asks for a human; the API then returns her handoff message with `escalate: true`. The web app runs the same escalation path as the "Talk to a human" button, so a Kate conversation escalates at most once.
 - When a human escalation starts, Gemini writes the generated part of the escalation dossier (`POST /kate/dossier`) with structured output: summary, unresolved question, what Kate already checked, relevant financial documents from the synthetic set, and a suggested first action. Customer identity, account context, timestamps and status stay deterministic. Documents outside the synthetic set are dropped. If generation fails, the web app keeps a deterministic fallback dossier so the handoff still works.
+- The synthetic customer documents live as PDFs in `documents/`. Kate sees only their titles and dates in the chat, so document-specific questions lead to a human escalation. Dossier generation sends the PDFs to Gemini, which reads them natively, so the dossier can cite facts from them.
 
 ## Consequences
 
