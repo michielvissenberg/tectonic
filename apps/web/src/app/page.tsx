@@ -8,7 +8,7 @@ type EscalationRequest = {
 };
 
 type ChatMessage = {
-  role: 'customer' | 'kate';
+  role: 'customer' | 'kate' | 'human';
   text: string;
   time: string;
 };
@@ -71,6 +71,8 @@ export default function HomePage() {
   const [serviceView, setServiceView] = useState(false);
   const [messageDraft, setMessageDraft] = useState('');
   const [sentMessages, setSentMessages] = useState<ChatMessage[]>([]);
+  const [helperDraft, setHelperDraft] = useState('');
+  const [helperMessages, setHelperMessages] = useState<ChatMessage[]>([]);
 
   const requestHumanHelp = () => {
     if (escalationRequest) {
@@ -101,6 +103,18 @@ export default function HomePage() {
       text: 'I can help explain your mortgage payments. For document-specific questions, you can ask me to connect you with a human teammate.',
       time: '09:46',
     }]);
+  };
+
+  const sendHelperMessage = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const text = helperDraft.trim();
+
+    if (!text) {
+      return;
+    }
+
+    setHelperMessages((messages) => [...messages, { role: 'human', text, time: '09:47' }]);
+    setHelperDraft('');
   };
 
   return (
@@ -164,7 +178,13 @@ export default function HomePage() {
             </div>
             <div className="dossier-column"><section className="dossier-section"><h3>Linked documents</h3><div className="document-list">{escalationRequest.dossier.documents.map((document) => <article className="document-item" key={document.title}><div className="document-icon">▤</div><div><strong>{document.title}</strong><small>{document.type} · {document.date}</small><p>{document.relevance}</p></div></article>)}</div></section></div>
           </div>
-          <section className="dossier-section source-section"><h3>Source Kate conversation</h3><div className="source-messages">{escalationRequest.dossier.sourceConversation.map((message, index) => <div className={`source-message ${message.role}`} key={`${message.time}-${index}`}><span>{message.role === 'customer' ? 'Sophie' : 'Kate'}</span><p>{message.text}</p><time>{message.time}</time></div>)}</div></section>
+          <section className="dossier-section source-section"><div className="section-heading"><div><h3>Customer service chat</h3><p className="chat-context">Source Kate conversation · Take over this conversation</p></div><span>Internal</span></div><div className="worker-chat-window"><div className="date-divider"><span>Today, 30 September</span></div>{[...escalationRequest.dossier.sourceConversation, ...helperMessages].map((message, index) => message.role === 'customer' ? (
+            <div className="message-row customer-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny">SV</div></div>
+          ) : message.role === 'kate' ? (
+            <div className="message-row kate-message" key={`${message.time}-${index}`}><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div></div>
+          ) : (
+            <div className="message-row human-message" key={`${message.time}-${index}`}><div className="message-bubble"><p>{message.text}</p><time>{message.time}</time></div><div className="avatar avatar-tiny human-avatar">CS</div></div>
+          ))}</div><form className="worker-composer" onSubmit={sendHelperMessage}><input className="composer-input" type="text" value={helperDraft} onChange={(event) => setHelperDraft(event.target.value)} placeholder="Reply to Sophie..." aria-label="Reply to Sophie" /><button className="send-button" type="submit">Send</button></form></section>
         </section> : <section className="main-panel">
           <div className="mortgage-summary">
             <div className="summary-heading"><div><p className="eyebrow">Home loan</p><h2>Mortgage account</h2></div><span className="account-status">Active</span></div>
