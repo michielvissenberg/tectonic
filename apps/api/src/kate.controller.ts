@@ -1,6 +1,13 @@
 import { BadRequestException, Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { KateReplyRequestDto, KateReplyResponseDto, kateMessageRoles, type KateMessageDto } from './kate.dto.js';
+import {
+  KateDossierRequestDto,
+  KateDossierResponseDto,
+  KateReplyRequestDto,
+  KateReplyResponseDto,
+  kateMessageRoles,
+  type KateMessageDto,
+} from './kate.dto.js';
 import { KateService } from './kate.service.js';
 
 const maxMessages = 40;
@@ -17,7 +24,22 @@ export class KateController {
   @ApiBody({ type: KateReplyRequestDto })
   @ApiOkResponse({ type: KateReplyResponseDto })
   reply(@Body() body: KateReplyRequestDto) {
-    return this.kateService.reply(parseMessages(body?.messages));
+    const messages = parseMessages(body?.messages);
+
+    if (messages[messages.length - 1].role !== 'customer') {
+      throw new BadRequestException('The conversation must end with a customer message.');
+    }
+
+    return this.kateService.reply(messages);
+  }
+
+  @Post('dossier')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Generate the escalation dossier content from the Kate conversation' })
+  @ApiBody({ type: KateDossierRequestDto })
+  @ApiOkResponse({ type: KateDossierResponseDto })
+  dossier(@Body() body: KateDossierRequestDto) {
+    return this.kateService.dossier(parseMessages(body?.messages));
   }
 }
 
@@ -37,8 +59,8 @@ function parseMessages(messages: unknown): KateMessageDto[] {
     return { role: message.role as KateMessageDto['role'], text: message.text };
   });
 
-  if (parsed[0].role !== 'customer' || parsed[parsed.length - 1].role !== 'customer') {
-    throw new BadRequestException('The conversation must start and end with a customer message.');
+  if (parsed[0].role !== 'customer') {
+    throw new BadRequestException('The conversation must start with a customer message.');
   }
 
   return parsed;

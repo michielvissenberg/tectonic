@@ -39,6 +39,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kate/dossier": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate the escalation dossier content from the Kate conversation */
+        post: operations["KateController_dossier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -71,6 +88,34 @@ export interface components {
              * @example false
              */
             escalate: boolean;
+        };
+        KateDossierRequestDto: {
+            messages: components["schemas"]["KateMessageDto"][];
+        };
+        KateDossierDocumentDto: {
+            /** @example Repayment schedule */
+            title: string;
+            /** @example Schedule */
+            type: string;
+            /** @example 01 September 2026 */
+            date: string;
+            /** @example Shows the updated monthly amount and future payment breakdown. */
+            relevance: string;
+        };
+        KateDossierResponseDto: {
+            /** @example Sophie asked why her monthly mortgage payment increased. Kate explained the rate adjustment, but Sophie wants a human to check the details. */
+            summary: string;
+            /** @example What exact interest rate does my mortgage agreement use now? */
+            unresolvedQuestion: string;
+            /**
+             * @example [
+             *       "The interest rate was adjusted at the start of September 2026."
+             *     ]
+             */
+            kateAlreadyChecked: string[];
+            documents: components["schemas"]["KateDossierDocumentDto"][];
+            /** @example Open the repayment schedule and confirm the new rate with Sophie. */
+            suggestedFirstAction: string;
         };
     };
     responses: never;
@@ -155,6 +200,51 @@ export interface operations {
                 content?: never;
             };
             /** @description Gemini could not reply */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kate is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    KateController_dossier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KateDossierRequestDto"];
+            };
+        };
+        responses: {
+            /** @description The generated escalation dossier content */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KateDossierResponseDto"];
+                };
+            };
+            /** @description Invalid Kate conversation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Gemini could not generate the dossier */
             502: {
                 headers: {
                     [name: string]: unknown;
