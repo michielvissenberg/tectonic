@@ -11,10 +11,17 @@ Always-on instructions for agents in this repo. Keep this file short. Topic guid
 
 ## Working here
 
+- Work on a feature branch, never on `main`. Before making changes, verify the current branch; create a branch named `<type>/<area>/<slug>`, such as `feat/frontend/settings-form` or `feat/backend/settings-api`, for the work.
 - Small, deliberate steps. One vertical slice at a time.
 - Name things with the glossary once `GLOSSARY.md` exists. If it is missing, proceed silently; do not invent a parallel vocabulary.
 - Read ADRs under `docs/adr/` that touch the area you are changing. Create that directory only when the first ADR is needed.
 - Confirm seams with the human before writing tests. Tests sit at public interfaces, not internals.
+
+## Pull requests
+
+- Match every feature branch to its issue using `<type>/<area>/<slug>` naming.
+- Give each large issue its own pull request. A pull request may group a few small issues when they are closely related.
+- Keep no more than one PRD (product requirements document) in a pull request.
 
 ## Skills
 

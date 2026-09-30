@@ -33,8 +33,8 @@ export default function HomePage() {
   }
 
   return (
-    <main>
-      <h1>Tectonic</h1>
+    <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-6 p-6">
+      <h1 className="text-3xl font-semibold tracking-tight">Tectonic</h1>
       <p>A tiny persisted setting demo.</p>
       <form onSubmit={handleSubmit}>
         <label htmlFor="setting-value">Value</label>

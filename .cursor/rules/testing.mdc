@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Testing
 
+Only do very minimal/no tests, this is just a POC so testing is not really required
+
 The source of truth for the loop is the `tdd` skill in `.agents/skills/tdd`. Read it when writing or changing tests.
 
 ## Loop

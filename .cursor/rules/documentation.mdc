@@ -6,6 +6,7 @@ alwaysApply: false
 
 # Documentation
 
+never add comment blocks in the code of 3 lines or more, be very sparse with comments in the code
 Writing for agents: load `writing-for-agents` when editing skills, `AGENTS.md`, or other always-loaded pointers. Domain terms and decisions: `domain-modeling`.
 
 ## Glossary

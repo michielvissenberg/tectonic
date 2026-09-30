@@ -11,7 +11,7 @@
     "db:status": "docker compose ps",
     "db:studio": "pnpm --filter @tectonic/api exec prisma studio",
     "db:up": "docker compose up -d postgres",
-    "dev": "pnpm --filter @tectonic/sdk build && concurrently --kill-others-on-fail --names api,web \"pnpm --filter @tectonic/api dev\" \"pnpm --filter @tectonic/web dev\"",
+    "dev": "pnpm db:setup && pnpm --filter @tectonic/sdk build && concurrently --kill-others-on-fail --names api,web \"pnpm --filter @tectonic/api dev\" \"pnpm --filter @tectonic/web dev\"",
     "generate": "pnpm --filter @tectonic/api generate && pnpm --filter @tectonic/sdk generate",
     "lint": "turbo run lint",
     "typecheck": "pnpm --filter @tectonic/api typecheck && pnpm --filter @tectonic/sdk typecheck && pnpm --filter @tectonic/web typecheck"
