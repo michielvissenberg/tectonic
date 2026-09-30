@@ -3,13 +3,14 @@
 import { useState } from 'react';
 
 export default function HomePage() {
+  const [kateOpen, setKateOpen] = useState(true);
   const [humanRequested, setHumanRequested] = useState(false);
 
   return (
     <main className="app-shell">
       <header className="topbar">
         <div className="brand-lockup">
-          <div className="brand-mark" aria-label="KBC">KBC</div>
+          <img className="kbc-logo" src="/kbc-logo.jpg" alt="KBC" />
           <div>
             <p className="brand-name">KBC Mobile</p>
             <p className="brand-context">Personal banking</p>
@@ -17,6 +18,7 @@ export default function HomePage() {
         </div>
         <div className="topbar-actions">
           <span className="secure-status"><span className="status-dot" /> Secure session</span>
+          <button className="kate-trigger" type="button" onClick={() => setKateOpen(true)}><span className="kate-trigger-icon">K</span> Ask Kate</button>
           <div className="avatar avatar-small">SV</div>
         </div>
       </header>
@@ -62,20 +64,25 @@ export default function HomePage() {
               <div><span>Next payment</span><strong>03 Oct 2026</strong></div>
             </div>
           </div>
-
-          <div className="chat-header"><div><p className="eyebrow">Personal assistant</p><h2>Chat with Kate</h2></div><div className="kate-presence"><span className="status-dot" /> Online</div></div>
-          <div className="chat-window">
-            <div className="date-divider"><span>Today, 30 September</span></div>
-            <div className="message-row customer-message"><div className="message-bubble"><p>Hi Kate, I noticed my monthly mortgage payment is higher this month. Can you tell me why it changed?</p><time>09:41</time></div><div className="avatar avatar-tiny">SV</div></div>
-            <div className="message-row kate-message"><div className="avatar kate-avatar">K</div><div className="message-bubble"><p>Hi Sophie, of course. I’ve had a look at your home loan. Your interest rate was adjusted at the start of this month, which changed the monthly payment from € 1,230.25 to € 1,248.67.</p><time>09:42</time></div></div>
-            <div className="message-row customer-message"><div className="message-bubble"><p>Okay, that makes sense. Is this a permanent change?</p><time>09:43</time></div><div className="avatar avatar-tiny">SV</div></div>
-            <div className="message-row kate-message"><div className="avatar kate-avatar">K</div><div className="message-bubble"><p>Yes, the new rate applies for the rest of your current rate period. Your next payment will be collected on 3 October. I can also show you the full payment breakdown if that would be useful.</p><time>09:44</time></div></div>
-          </div>
-          <div className="chat-action">
-            {humanRequested ? <div className="requested-state"><span>✓</span><div><strong>A human teammate has been requested</strong><small>Someone will join this conversation shortly.</small></div></div> : <><div className="composer-placeholder">Ask Kate a question...</div><button className="human-button" type="button" onClick={() => setHumanRequested(true)}><span>↗</span> Talk to a human</button></>}
-          </div>
+          <div className="account-content-placeholder"><p className="eyebrow">Recent activity</p><h2>Your home loan is up to date</h2><p>Your latest payment was received on 03 September 2026. Open Kate for a clear explanation of the payment change.</p><button className="secondary-button" type="button" onClick={() => setKateOpen(true)}>Open Kate <span>→</span></button></div>
         </section>
       </section>
+
+      {kateOpen && <div className="kate-scrim" onClick={() => setKateOpen(false)} />}
+      <aside className={`kate-drawer${kateOpen ? ' is-open' : ''}`} aria-label="Chat with Kate">
+        <div className="kate-drawer-header"><div className="kate-title"><img src="/kbc-kate-logo.jpg" alt="" /><div><p className="eyebrow">Personal assistant</p><h2>Kate</h2></div></div><button className="close-button" type="button" aria-label="Close Kate" onClick={() => setKateOpen(false)}>×</button></div>
+        <div className="kate-drawer-status"><span className="status-dot" /> Online now</div>
+        <div className="chat-window">
+          <div className="date-divider"><span>Today, 30 September</span></div>
+          <div className="message-row customer-message"><div className="message-bubble"><p>Hi Kate, I noticed my monthly mortgage payment is higher this month. Can you tell me why it changed?</p><time>09:41</time></div><div className="avatar avatar-tiny">SV</div></div>
+          <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>Hi Sophie, of course. I’ve had a look at your home loan. Your interest rate was adjusted at the start of this month, which changed the monthly payment from € 1,230.25 to € 1,248.67.</p><time>09:42</time></div></div>
+          <div className="message-row customer-message"><div className="message-bubble"><p>Okay, that makes sense. Is this a permanent change?</p><time>09:43</time></div><div className="avatar avatar-tiny">SV</div></div>
+          <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>Yes, the new rate applies for the rest of your current rate period. Your next payment will be collected on 3 October. I can also show you the full payment breakdown if that would be useful.</p><time>09:44</time></div></div>
+        </div>
+        <div className="chat-action">
+          {humanRequested ? <div className="requested-state"><span>✓</span><div><strong>A human teammate has been requested</strong><small>Someone will join this conversation shortly.</small></div></div> : <><div className="composer-placeholder">Ask Kate a question...</div><button className="human-button" type="button" onClick={() => setHumanRequested(true)}><span>↗</span> Talk to a human</button></>}
+        </div>
+      </aside>
     </main>
   );
 }
