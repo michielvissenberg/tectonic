@@ -73,6 +73,34 @@
           "503": { "description": "Kate is not configured" }
         }
       }
+    },
+    "/kate/dossier": {
+      "post": {
+        "tags": ["kate"],
+        "summary": "Generate the escalation dossier content from the Kate conversation",
+        "operationId": "KateController_dossier",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/KateDossierRequestDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The generated escalation dossier content",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/KateDossierResponseDto" }
+              }
+            }
+          },
+          "400": { "description": "Invalid Kate conversation" },
+          "502": { "description": "Gemini could not generate the dossier" },
+          "503": { "description": "Kate is not configured" }
+        }
+      }
     }
   },
   "components": {
@@ -112,6 +140,34 @@
         "properties": {
           "text": { "type": "string", "example": "Your interest rate was adjusted at the start of September." },
           "escalate": { "type": "boolean", "description": "True when Kate started a human escalation; text is then her handoff message.", "example": false }
+        }
+      },
+      "KateDossierRequestDto": {
+        "type": "object",
+        "required": ["messages"],
+        "properties": {
+          "messages": { "type": "array", "items": { "$ref": "#/components/schemas/KateMessageDto" } }
+        }
+      },
+      "KateDossierDocumentDto": {
+        "type": "object",
+        "required": ["title", "type", "date", "relevance"],
+        "properties": {
+          "title": { "type": "string", "example": "Repayment schedule" },
+          "type": { "type": "string", "example": "Schedule" },
+          "date": { "type": "string", "example": "01 September 2026" },
+          "relevance": { "type": "string", "example": "Shows the updated monthly amount and future payment breakdown." }
+        }
+      },
+      "KateDossierResponseDto": {
+        "type": "object",
+        "required": ["summary", "unresolvedQuestion", "kateAlreadyChecked", "documents", "suggestedFirstAction"],
+        "properties": {
+          "summary": { "type": "string", "example": "Sophie asked why her monthly mortgage payment increased. Kate explained the rate adjustment, but Sophie wants a human to check the details." },
+          "unresolvedQuestion": { "type": "string", "example": "What exact interest rate does my mortgage agreement use now?" },
+          "kateAlreadyChecked": { "type": "array", "items": { "type": "string" }, "example": ["The interest rate was adjusted at the start of September 2026."] },
+          "documents": { "type": "array", "items": { "$ref": "#/components/schemas/KateDossierDocumentDto" } },
+          "suggestedFirstAction": { "type": "string", "example": "Open the repayment schedule and confirm the new rate with Sophie." }
         }
       }
     }

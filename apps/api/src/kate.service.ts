@@ -1,7 +1,15 @@
 import { BadGatewayException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { FunctionCallingConfigMode, GoogleGenAI, ThinkingLevel, Type, type FunctionDeclaration } from '@google/genai';
-import { kateSystemInstruction } from './kate-context.js';
-import type { KateMessageDto, KateReplyResponseDto } from './kate.dto.js';
+import {
+  FunctionCallingConfigMode,
+  GoogleGenAI,
+  ThinkingLevel,
+  Type,
+  type FunctionDeclaration,
+  type GenerateContentConfig,
+  type GenerateContentParameters,
+} from '@google/genai';
+import { dossierSystemInstruction, kateDocuments, kateSystemInstruction } from './kate-context.js';
+import type { KateDossierResponseDto, KateMessageDto, KateReplyResponseDto } from './kate.dto.js';
 
 const defaultModel = 'gemini-3.6-flash';
 const defaultHandoffMessage = 'I\'m sorry, I can\'t resolve this for you myself. I\'ll ask a human teammate to help.';
@@ -22,37 +30,47 @@ const startHumanEscalation: FunctionDeclaration = {
   },
 };
 
+// Structured output for the generated part of the escalation dossier. Documents are limited to the synthetic set.
+const dossierSchema = {
+  type: 'object',
+  properties: {
+    summary: { type: 'string' },
+    unresolvedQuestion: { type: 'string' },
+    kateAlreadyChecked: { type: 'array', items: { type: 'string' } },
+    documents: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', enum: kateDocuments.map((document) => document.title) },
+          relevance: { type: 'string' },
+        },
+        required: ['title', 'relevance'],
+      },
+    },
+    suggestedFirstAction: { type: 'string' },
+  },
+  required: ['summary', 'unresolvedQuestion', 'kateAlreadyChecked', 'documents', 'suggestedFirstAction'],
+};
+
 @Injectable()
 export class KateService {
   private readonly logger = new Logger(KateService.name);
   private client: GoogleGenAI | null = null;
 
   async reply(messages: KateMessageDto[]): Promise<KateReplyResponseDto> {
-    const model = process.env.VERTEX_MODEL || defaultModel;
-    const response = await this.getClient()
-      .models.generateContent({
-        model,
-        contents: messages.map((message) => ({
-          role: message.role === 'customer' ? 'user' : 'model',
-          parts: [{ text: message.text }],
-        })),
-        config: {
-          systemInstruction: kateSystemInstruction,
-          temperature: 0.3,
-          tools: [{ functionDeclarations: [startHumanEscalation] }],
-          toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } },
-          // Short, grounded chat replies need little thinking; keeping it minimal keeps Kate responsive.
-          thinkingConfig: model.startsWith('gemini-2') ? { thinkingBudget: 0 } : { thinkingLevel: ThinkingLevel.MINIMAL },
-          // Fail fast to the fallback reply instead of backing off for up to a minute on throttling.
-          httpOptions: { retryOptions: { attempts: 2 } },
-        },
-      })
-      .catch((error: unknown) => {
-        // Log only the error type and status; the SDK error may echo request details.
-        const status = (error as { status?: number }).status ?? 'unknown';
-        this.logger.error(`Gemini request failed (${(error as Error).name}, status ${status})`);
-        throw new BadGatewayException('Kate could not reply right now.');
-      });
+    const response = await this.generate(
+      messages.map((message) => ({
+        role: message.role === 'customer' ? 'user' : 'model',
+        parts: [{ text: message.text }],
+      })),
+      {
+        systemInstruction: kateSystemInstruction,
+        tools: [{ functionDeclarations: [startHumanEscalation] }],
+        toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } },
+      },
+      'Kate could not reply right now.',
+    );
 
     // Read text parts directly: the `text` getter warns when the response also holds a function call.
     const text = (response.candidates?.[0]?.content?.parts ?? [])
@@ -77,6 +95,52 @@ export class KateService {
     return { text, escalate: false };
   }
 
+  async dossier(messages: KateMessageDto[]): Promise<KateDossierResponseDto> {
+    const transcript = messages.map((message) => `${message.role === 'customer' ? 'Customer' : 'Kate'}: ${message.text}`).join('\n');
+    const response = await this.generate(
+      [{ role: 'user', parts: [{ text: `Kate conversation:\n${transcript}` }] }],
+      {
+        systemInstruction: dossierSystemInstruction,
+        responseMimeType: 'application/json',
+        responseJsonSchema: dossierSchema,
+      },
+      'The escalation dossier could not be generated.',
+    );
+
+    const dossier = parseDossier(response.text);
+
+    if (!dossier) {
+      this.logger.error('Gemini returned an invalid escalation dossier');
+      throw new BadGatewayException('The escalation dossier could not be generated.');
+    }
+
+    return dossier;
+  }
+
+  private async generate(contents: GenerateContentParameters['contents'], config: GenerateContentConfig, failureMessage: string) {
+    const model = process.env.VERTEX_MODEL || defaultModel;
+
+    return this.getClient()
+      .models.generateContent({
+        model,
+        contents,
+        config: {
+          temperature: 0.3,
+          // Short, grounded output needs little thinking; keeping it minimal keeps Kate responsive.
+          thinkingConfig: model.startsWith('gemini-2') ? { thinkingBudget: 0 } : { thinkingLevel: ThinkingLevel.MINIMAL },
+          // Fail fast to the fallback instead of backing off for up to a minute on throttling.
+          httpOptions: { retryOptions: { attempts: 2 } },
+          ...config,
+        },
+      })
+      .catch((error: unknown) => {
+        // Log only the error type and status; the SDK error may echo request details.
+        const status = (error as { status?: number }).status ?? 'unknown';
+        this.logger.error(`Gemini request failed (${(error as Error).name}, status ${status})`);
+        throw new BadGatewayException(failureMessage);
+      });
+  }
+
   private getClient() {
     const apiKey = process.env.VERTEX_API_KEY;
 
@@ -88,4 +152,41 @@ export class KateService {
     this.client ??= new GoogleGenAI({ enterprise: true, apiKey });
     return this.client;
   }
+}
+
+const nonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+
+function parseDossier(json: string | undefined): KateDossierResponseDto | null {
+  let raw: Record<string, unknown>;
+
+  try {
+    raw = JSON.parse(json ?? '');
+  } catch {
+    return null;
+  }
+
+  if (!nonEmptyString(raw?.summary) || !nonEmptyString(raw.unresolvedQuestion) || !nonEmptyString(raw.suggestedFirstAction)) {
+    return null;
+  }
+
+  const seen = new Set<string>();
+  const documents = (Array.isArray(raw.documents) ? raw.documents : []).flatMap((item: { title?: unknown; relevance?: unknown }) => {
+    // Drop documents outside the synthetic set, duplicates, and entries without a reason.
+    const document = kateDocuments.find(({ title }) => title === item?.title);
+
+    if (!document || seen.has(document.title) || !nonEmptyString(item.relevance)) {
+      return [];
+    }
+
+    seen.add(document.title);
+    return [{ ...document, relevance: item.relevance.trim() }];
+  });
+
+  return {
+    summary: raw.summary.trim(),
+    unresolvedQuestion: raw.unresolvedQuestion.trim(),
+    kateAlreadyChecked: (Array.isArray(raw.kateAlreadyChecked) ? raw.kateAlreadyChecked : []).filter(nonEmptyString).map((item) => item.trim()),
+    documents,
+    suggestedFirstAction: raw.suggestedFirstAction.trim(),
+  };
 }

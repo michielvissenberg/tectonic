@@ -18,9 +18,9 @@ The POC started with scripted Kate replies. A scripted Kate cannot show whether 
 - Kate is grounded in the synthetic source context and instructed not to invent account facts.
 - If Gemini is unconfigured or fails, the API returns an error without request details and the web app shows a fallback reply.
 - Gemini has exactly one tool, `start_human_escalation`. Kate calls it when she cannot resolve the problem or the customer asks for a human; the API then returns her handoff message with `escalate: true`. The web app runs the same escalation path as the "Talk to a human" button, so a Kate conversation escalates at most once.
+- When a human escalation starts, Gemini writes the generated part of the escalation dossier (`POST /kate/dossier`) with structured output: summary, unresolved question, what Kate already checked, relevant financial documents from the synthetic set, and a suggested first action. Customer identity, account context, timestamps and status stay deterministic. Documents outside the synthetic set are dropped. If generation fails, the web app keeps a deterministic fallback dossier so the handoff still works.
 
 ## Consequences
 
 - The demo needs network access and a Vertex API key to show live Kate replies.
 - Replies are non-deterministic; the seeded opening conversation stays scripted so the demo still starts the same way.
-- A later slice lets Gemini write the escalation dossier (#16).
