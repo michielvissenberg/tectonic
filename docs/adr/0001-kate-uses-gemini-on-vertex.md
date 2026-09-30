@@ -17,9 +17,10 @@ The POC started with scripted Kate replies. A scripted Kate cannot show whether 
 - The key is read from `VERTEX_API_KEY` in the uncommitted `apps/api/.env`. The model is configurable with `VERTEX_MODEL`.
 - Kate is grounded in the synthetic source context and instructed not to invent account facts.
 - If Gemini is unconfigured or fails, the API returns an error without request details and the web app shows a fallback reply.
+- Gemini has exactly one tool, `start_human_escalation`. Kate calls it when she cannot resolve the problem or the customer asks for a human; the API then returns her handoff message with `escalate: true`. The web app runs the same escalation path as the "Talk to a human" button, so a Kate conversation escalates at most once.
 
 ## Consequences
 
 - The demo needs network access and a Vertex API key to show live Kate replies.
 - Replies are non-deterministic; the seeded opening conversation stays scripted so the demo still starts the same way.
-- Later slices give Gemini a single action to start a human escalation (#15) and let Gemini write the escalation dossier (#16).
+- A later slice lets Gemini write the escalation dossier (#16).

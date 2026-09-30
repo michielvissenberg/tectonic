@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 import { createSdkClient } from '@tectonic/sdk';
 
 const api = createSdkClient(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001');
@@ -50,16 +50,19 @@ const initialConversation: ChatMessage[] = [
   { role: 'kate', text: 'Yes, the new rate applies for the rest of your current rate period. Your next payment will be collected on 3 October. I can also show you the full payment breakdown if that would be useful.', time: '09:44' },
 ];
 
+const buttonHandoffMessage = 'Of course. I’ll ask a human teammate to help.';
+const humanJoiningMessage = 'A human helper will join this chat shortly, so you won’t need to repeat what happened.';
+
 const helperConfirmationTemplate = 'I understand your question as: your monthly mortgage payment changed and you want to know why. Is that correct?';
 
-const createEscalationDossier = (): EscalationDossier => ({
+const createEscalationDossier = (sourceConversation: ChatMessage[]): EscalationDossier => ({
   customer: 'Sophie Vermeulen',
   account: 'Home loan •••• 1098',
   createdAt: '30 September 2026, 09:45',
   status: 'Awaiting human review',
   generatedSummary: 'Kate captured that Sophie is asking why her monthly mortgage payment increased from EUR 1,230.25 to EUR 1,248.67. This case needs human review to confirm the payment change, whether it is permanent, and which mortgage documents explain the adjustment.',
   unresolvedQuestion: 'Why did my monthly mortgage payment change, and is the new amount permanent?',
-  sourceConversation: initialConversation,
+  sourceConversation,
   accountContext: {
     balance: 'EUR 238,450.12',
     monthlyPayment: 'EUR 1,248.67',
@@ -84,45 +87,61 @@ export default function HomePage() {
   const [helperDraft, setHelperDraft] = useState(helperConfirmationTemplate);
   const [helperMessages, setHelperMessages] = useState<ChatMessage[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
+  // Guards the single human escalation per Kate conversation, even while a Kate reply is still pending.
+  const escalated = useRef(false);
 
-  const requestHumanHelp = () => {
-    if (escalationRequest) {
+  // The one escalation path, shared by the "Talk to a human" button and Kate's escalation action.
+  const escalate = (conversation: ChatMessage[], handoffMessage: string) => {
+    if (escalated.current) {
       return;
     }
 
-    setEscalationRequest({ summary: 'requested', dossier: createEscalationDossier() });
+    escalated.current = true;
+    const time = currentTime();
+    const liveConversation: ChatMessage[] = [
+      ...conversation,
+      { role: 'kate', text: handoffMessage, time },
+      { role: 'kate', text: humanJoiningMessage, time },
+    ];
+
+    setSentMessages(liveConversation);
+    setEscalationRequest({ summary: 'requested', dossier: createEscalationDossier(liveConversation) });
     setHelperDraft(helperConfirmationTemplate);
-    setSentMessages((messages) => [
-      ...messages,
-      { role: 'kate', text: 'I can pass this mortgage question to a human specialist for review. I’ll keep the summary and the documents together so you won’t need to repeat the full story.', time: '09:45' },
-      { role: 'kate', text: 'A human specialist is reviewing the payment-change question and the related mortgage documents now.', time: '09:45' },
-    ]);
   };
+
+  const requestHumanHelp = () => escalate(sentMessages, buttonHandoffMessage);
 
   const sendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const text = messageDraft.trim();
 
-    if (!text || escalationRequest || kateReplying) {
+    if (!text || escalated.current || kateReplying) {
       return;
     }
 
     const customerMessage: ChatMessage = { role: 'customer', text, time: currentTime() };
-    setSentMessages((messages) => [...messages, customerMessage]);
+    const conversation = [...sentMessages, customerMessage];
+    setSentMessages(conversation);
     setMessageDraft('');
 
-    if (/\b(human|person|helper|agent|customer service)\b/i.test(text)) {
-      requestHumanHelp();
-      return;
-    }
-
-    const kateConversation = [...sentMessages, customerMessage]
+    const kateConversation = conversation
       .filter((message) => message.role !== 'human')
       .map(({ role, text: messageText }) => ({ role: role as 'customer' | 'kate', text: messageText }));
 
     setKateReplying(true);
     const { data } = await api.POST('/kate/reply', { body: { messages: kateConversation } }).catch(() => ({ data: undefined }));
     setKateReplying(false);
+
+    // The customer escalated with the button while Kate was replying; drop her late reply.
+    if (escalated.current) {
+      return;
+    }
+
+    if (data?.escalate) {
+      escalate(conversation, data.text);
+      return;
+    }
+
     setSentMessages((messages) => [...messages, { role: 'kate', text: data?.text ?? kateFallbackReply, time: currentTime() }]);
   };
 
