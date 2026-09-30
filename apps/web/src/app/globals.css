@@ -1,5 +1,36 @@
 @import 'tailwindcss';
 
+.dossier-entry { width: 100%; display: flex; align-items: center; gap: 10px; margin-top: 18px; padding: 12px 10px; border: 1px solid #b8ddef; border-radius: 3px; background: #f5fbfe; color: var(--deep-green); text-align: left; cursor: pointer; }
+.dossier-entry.is-open { background: var(--mint); }
+.dossier-entry strong { display: block; font-size: 12px; }
+.dossier-entry small { display: block; margin-top: 4px; color: var(--muted); font: 11px Arial, sans-serif; }
+.dossier-entry-icon { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; background: #d7eff9; color: var(--green); font-size: 16px; }
+.worker-workspace { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) minmax(230px, .8fr); gap: 18px; padding-top: 20px; }
+.worker-workspace .dossier-column { min-width: 0; }
+.worker-workspace .source-section { margin-top: 0; }
+.worker-workspace .worker-chat-window { max-height: 445px; }
+.helper-panel { display: flex; flex-direction: column; min-width: 0; }
+.helper-chat-window { flex: 1; min-height: 220px; margin: 4px -2px 15px; padding: 14px 2px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.helper-empty { color: var(--muted); font: 12px Arial, sans-serif; line-height: 1.5; }
+.worker-composer { display: flex; gap: 8px; }
+.service-landing { min-height: 400px; padding: 48px 32px; }
+.service-landing h2 { margin: 10px 0; font-size: 28px; font-weight: 400; }
+.service-landing p:not(.eyebrow) { max-width: 500px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.document-item { width: 100%; border-right: 0; border-bottom: 0; border-left: 0; color: var(--ink); background: transparent; text-align: left; cursor: pointer; }
+.document-item.is-selected { border-left: 3px solid var(--green); padding-left: 9px; background: #f1f8f5; }
+.document-item:focus-visible { outline: 2px solid #8dcbe4; outline-offset: 2px; }
+
+@media (max-width: 1100px) {
+	.worker-workspace { grid-template-columns: 1fr 1fr; }
+	.helper-panel { grid-column: 1 / -1; }
+}
+
+@media (max-width: 800px) {
+	.worker-workspace { grid-template-columns: 1fr; }
+	.helper-panel { grid-column: auto; }
+	.service-landing { min-height: 300px; padding: 30px 20px; }
+}
+
 :root {
 	--ink: #1d2c3d;
 	--muted: #687b8f;
