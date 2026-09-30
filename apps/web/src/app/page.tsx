@@ -207,7 +207,7 @@ export default function HomePage() {
           ))}
           {escalationRequest && <>
             <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>I’m sorry, I can’t handle this document-specific mortgage question. I’ll ask a human teammate to help.</p><time>09:45</time></div></div>
-            <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>I’ll send this conversation and a summary to a human helper, so you won’t need to repeat what happened.</p><time>09:45</time></div></div>
+            <div className="message-row kate-message"><img className="kate-message-logo" src="/kbc-kate-logo.jpg" alt="" /><div className="message-bubble"><p>A human helper will join this chat shortly, so you won’t need to repeat what happened.</p><time>09:45</time></div></div>
           </>}
         </div>
         <div className="chat-action">
